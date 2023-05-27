@@ -57,6 +57,8 @@ then
 	cp ./$0 /mnt/install-script
 
 	arch-chroot /mnt /install-script
+
+	rm /mnt/install-script
 elif [ "$1" = "root" ]
 then
 	if [ -n "$MICROCODE" ]
@@ -106,4 +108,8 @@ then
 	echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
 	systemctl enable NetworkManager.service
+
+	passwd
+
+	passwd $USERNAME
 fi
