@@ -54,7 +54,7 @@ then
 
 	genfstab -U /mnt >> /mnt/etc/fstab
 
-	cp ./$0 /mnt/install-script
+	cp $0 /mnt/install-script
 
 	arch-chroot /mnt /install-script
 
