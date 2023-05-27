@@ -56,7 +56,7 @@ then
 
 	cp $0 /mnt/install-script
 
-	arch-chroot /mnt /install-script
+	arch-chroot /mnt sh /install-script root
 
 	rm /mnt/install-script
 elif [ "$1" = "root" ]
