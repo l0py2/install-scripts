@@ -56,7 +56,9 @@ then
 
 	cp $0 /mnt/install-script
 
-	arch-chroot /mnt sh /install-script root
+	chmod 111 /mnt/install-script
+
+	arch-chroot /mnt /install-script root
 
 	rm /mnt/install-script
 elif [ "$1" = "root" ]
@@ -108,8 +110,17 @@ then
 	echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
 	systemctl enable NetworkManager.service
+	
+	sudo -u $USERNAME /install-script user
+
+	echo -e "\n\n\nInsert root password"
 
 	passwd
 
+	echo -e "\n\n\nInsert user password"
+
 	passwd $USERNAME
+elif [ "$1" = "user" ]
+then
+	cd $HOME
 fi
