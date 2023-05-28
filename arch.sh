@@ -19,7 +19,7 @@ USERNAME="lp2"
 # Script variables
 MICROCODE="intel-ucode"
 FIRMWARE_PACKAGES=""
-BASE_PACKAGES="grub efibootmgr sudo networkmanager"
+BASE_PACKAGES="grub efibootmgr sudo networkmanager base-devel git rustup"
 UTIL_PACKAGES="neovim man-db man-pages texinfo"
 AUR_PACKAGES=""
 
@@ -122,5 +122,23 @@ then
 	passwd $USERNAME
 elif [ "$1" = "user" ]
 then
+	rustup default stable
+
+	cd $HOME
+
+	mkdir repositories
+
+	cd repositories
+
+	git clone https://aur.archlinux.org/paru
+
+	cd paru
+
+	makepkg -si
+
+	cd ..
+
+	rm -rf paru
+
 	cd $HOME
 fi
