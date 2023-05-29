@@ -142,9 +142,12 @@ then
 
 	yay -Y --gendb
 
-	cd ..
-
-	rm -rf yay
-
 	cd $HOME
+
+	rm -rf repositories
+
+	if [ -n "$AUR_PACKAGES" ]
+	then
+		yay -S --noconfirm $AUR_PACKAGES
+	fi
 fi
