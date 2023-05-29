@@ -136,7 +136,7 @@ then
 
 	cd paru
 
-	makepkg -si
+	makepkg -si --noconfirm
 
 	cd ..
 
