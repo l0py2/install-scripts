@@ -123,7 +123,7 @@ then
 
 	sed -i "\$d" /etc/sudoers
 
-	echo "%wheel ALL(ALL:ALL) ALL" >> /etc/sudoers
+	echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
 elif [ "$1" = "user" ]
 then
 	rustup default stable
