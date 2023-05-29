@@ -121,7 +121,9 @@ then
 	
 	sudo -u $USERNAME /install-script user
 
-	sed -i "s/%wheel ALL=\(ALL:ALL\) NOPASSWD: ALL # temp/%wheel ALL=\(ALL:ALL\) ALL/" /etc/sudoers
+	sed -i "\$d" /etc/sudoers
+
+	echo "%wheel ALL(ALL:ALL) ALL" >> /etc/sudoers
 elif [ "$1" = "user" ]
 then
 	rustup default stable
