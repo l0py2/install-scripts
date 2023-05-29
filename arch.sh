@@ -56,7 +56,7 @@ then
 
 	cp $0 /mnt/install-script
 
-	chmod 111 /mnt/install-script
+	chmod 777 /mnt/install-script
 
 	arch-chroot /mnt /install-script root
 
@@ -107,11 +107,9 @@ then
 
 	useradd -m -G wheel $USERNAME
 
-	echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
+	echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp" >> /etc/sudoers
 
 	systemctl enable NetworkManager.service
-	
-	sudo -u $USERNAME /install-script user
 
 	echo -e "\n\n\nInsert root password"
 
@@ -120,6 +118,10 @@ then
 	echo -e "\n\n\nInsert user password"
 
 	passwd $USERNAME
+	
+	sudo -u $USERNAME /install-script user
+
+	sed -i "s/%wheel ALL=\(ALL:ALL\) NOPASSWD: ALL # temp/%wheel ALL=\(ALL:ALL\) ALL/" /etc/sudoers
 elif [ "$1" = "user" ]
 then
 	rustup default stable
