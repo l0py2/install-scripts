@@ -19,7 +19,7 @@ USERNAME="lp2"
 # Script variables
 MICROCODE="intel-ucode"
 FIRMWARE_PACKAGES="mesa"
-BASE_PACKAGES="grub efibootmgr sudo networkmanager base-devel git rustup dunst polkit polkit-gnome"
+BASE_PACKAGES="grub efibootmgr sudo networkmanager base-devel git rustup xdg-desktop-portal-hyprland dunst polkit polkit-gnome pipewire wireplumber pipewire-audio pipewire-alsa pipewire-pulse pipewire-jack"
 UTIL_PACKAGES="neovim man-db man-pages texinfo"
 AUR_PACKAGES="hyprland-git xdg-desktop-portal-hyprland-git"
 
@@ -134,13 +134,13 @@ then
 
 	cd repositories
 
-	git clone https://aur.archlinux.org/yay.git
+	git clone https://aur.archlinux.org/paru.git
 
-	cd yay
+	cd paru
 
 	makepkg -si --noconfirm
 
-	yay -Y --gendb
+	paru --gendb
 
 	cd $HOME
 
@@ -148,6 +148,6 @@ then
 
 	if [ -n "$AUR_PACKAGES" ]
 	then
-		yay -S --noconfirm $AUR_PACKAGES
+		paru -S --noconfirm $AUR_PACKAGES
 	fi
 fi
