@@ -19,9 +19,13 @@ USERNAME="lp2"
 # Script variables
 MICROCODE="intel-ucode"
 FIRMWARE_PACKAGES="mesa"
-BASE_PACKAGES="grub efibootmgr sudo networkmanager base-devel git rustup xdg-desktop-portal-hyprland dunst polkit polkit-gnome pipewire wireplumber pipewire-audio pipewire-alsa pipewire-pulse pipewire-jack"
-UTIL_PACKAGES="neovim man-db man-pages texinfo"
-AUR_PACKAGES="hyprland-git xdg-desktop-portal-hyprland-git"
+DEPENDENCY_PACKAGES="gtk4 qt5-wayland qt6-wayland"
+BOOT_LOADER_PACKAGES="grub efibootmgr"
+BASE_PACKAGES="sudo networkmanager base-devel git rustup"
+AUDIO_PACKAGES="pipewire wireplumber pipewire-audio pipewire-alsa pipewire-pulse pipewire-jack"
+USER_PACKAGES="xdg-desktop-portal-wlr dunst polkit polkit-gnome wofi"
+UTIL_PACKAGES="neovim man-db man-pages texinfo kitty"
+AUR_PACKAGES="hyprland-git waybar-hyprland-git swww"
 
 if [ -z "$1" ]
 then
@@ -73,9 +77,29 @@ then
 		pacman -S --noconfirm $FIRMWARE_PACKAGES
 	fi
 
+	if [ -n "$DEPENDENCY_PACKAGES" ]
+	then
+		pacman -S --noconfirm $DEPENDENCY_PACKAGES
+	fi
+
+	if [ -n "$BOOT_LOADER_PACKAGES" ]
+	then
+		pacman -S --noconfirm $BOOT_LOADER_PACKAGES
+	fi
+
 	if [ -n "$BASE_PACKAGES" ]
 	then
 		pacman -S --noconfirm $BASE_PACKAGES
+	fi
+
+	if [ -n "$AUDIO_PACKAGES" ]
+	then
+		pacman -S --noconfirm $AUDIO_PACKAGES
+	fi
+
+	if [ -n "$USER_PACKAGES" ]
+	then
+		pacman -S --noconfrim $USER_PACKAGES
 	fi
 
 	if [ -n "$UTIL_PACKAGES" ]
