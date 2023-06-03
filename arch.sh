@@ -18,10 +18,10 @@ USERNAME="lp2"
 
 # Script variables
 MICROCODE="intel-ucode"
-FIRMWARE_PACKAGES="mesa"
+FIRMWARE_PACKAGES="mesa sof-firmware alsa-firmware"
 DEPENDENCY_PACKAGES="gtk4 qt5-wayland qt6-wayland"
 BOOT_LOADER_PACKAGES="grub efibootmgr"
-BASE_PACKAGES="sudo networkmanager base-devel git rustup"
+BASE_PACKAGES="sudo networkmanager base-devel git rustup openssh"
 AUDIO_PACKAGES="pipewire wireplumber pipewire-audio pipewire-alsa pipewire-pulse pipewire-jack"
 USER_PACKAGES="xdg-desktop-portal-wlr dunst polkit polkit-gnome wofi"
 UTIL_PACKAGES="neovim man-db man-pages texinfo kitty"
@@ -99,7 +99,7 @@ then
 
 	if [ -n "$USER_PACKAGES" ]
 	then
-		pacman -S --noconfrim $USER_PACKAGES
+		pacman -S --noconfirm $USER_PACKAGES
 	fi
 
 	if [ -n "$UTIL_PACKAGES" ]
