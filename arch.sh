@@ -166,6 +166,14 @@ then
 
 	paru --gendb
 
+	cd ..
+
+	git clone https://github.com/l0py2/dotfiles --separate-git-dir=$HOME/.dotfiles
+
+	rm dotfiles/.git
+
+	cp dotfiles/. $HOME
+
 	cd $HOME
 
 	rm -rf repositories
