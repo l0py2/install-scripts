@@ -23,7 +23,7 @@ DEPENDENCY_PACKAGES="gtk4 qt5-wayland qt6-wayland"
 BOOT_LOADER_PACKAGES="grub efibootmgr"
 BASE_PACKAGES="sudo networkmanager base-devel git rustup openssh ttf-nerd-fonts-symbols starship"
 AUDIO_PACKAGES="pipewire wireplumber pipewire-audio pipewire-alsa pipewire-pulse pipewire-jack"
-USER_PACKAGES="xdg-desktop-portal-wlr dunst polkit polkit-gnome wofi"
+USER_PACKAGES="xdg-desktop-portal-wlr dunst polkit polkit-gnome wofi udisks2"
 UTIL_PACKAGES="neovim man-db man-pages texinfo kitty"
 AUR_PACKAGES="hyprland-git waybar-hyprland-git swww"
 
@@ -177,6 +177,8 @@ then
 	cd $HOME
 
 	rm -rf repositories
+
+	git --git-dir=.dotfiles --work-tree=$HOME config status.showUntrackedFiles no
 
 	if [ -n "$AUR_PACKAGES" ]
 	then
