@@ -172,7 +172,7 @@ then
 
 	rm dotfiles/.git
 
-	cp dotfiles/. $HOME
+	cp -r dotfiles/. $HOME
 
 	cd $HOME
 
