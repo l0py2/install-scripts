@@ -18,6 +18,7 @@ USERNAME="lp2"
 
 # Script variables
 MICROCODE="intel-ucode"
+SHELL="dash"
 FIRMWARE_PACKAGES="mesa sof-firmware alsa-firmware"
 DEPENDENCY_PACKAGES="gtk4 qt5-wayland qt6-wayland"
 BOOT_LOADER_PACKAGES="grub efibootmgr"
@@ -70,6 +71,21 @@ then
 	if [ -n "$MICROCODE" ]
 	then
 		pacman -S --noconfirm $MICROCODE
+	fi
+
+	if [ -n "$SHELL" ]
+	then
+		pacman -S --noconfirm $SHELL
+
+		echo "[Trigger]" > /usr/share/libalpm/hooks/shell-relink.hook
+		echo "Type = Package" >> /usr/share/libalpm/hooks/shell-relink.hook
+		echo "Operation = Upgrade" >> /usr/share/libalpm/hooks/shell-relink.hook
+		echo -e "Target = bash\n" >> /usr/share/libalpm/hooks/shell-relink.hook
+		echo "[Action]" >> /usr/share/libalpm/hooks/shell-relink.hook
+		echo "Description = Re-pointing /bin/sh to dash..." >> /usr/share/libalpm/hooks/shell-relink.hook
+		echo "When = PostTransaction" >> /usr/share/libalpm/hooks/shell-relink.hook
+		echo "Exec = /usr/bin/ln -sfT dash /usr/bin/sh" >> /usr/share/libalpm/hooks/shell-relink.hook
+		echo "Depends = $SHELL"
 	fi
 
 	if [ -n "$FIRMWARE_PACKAGES" ]
