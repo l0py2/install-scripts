@@ -307,7 +307,13 @@ then
 
 	cd ..
 
-	git clone https://github.com/l0py2/dotfiles --separate-git-dir=$HOME/.dotfiles
+	if [ "$TYPE" = 'base' ]
+	then
+		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-base dotfiles
+	elif [ "$TYPE" = 'hyprland' ]
+	then
+		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-hyprland dotfiles
+	fi
 
 	rm dotfiles/.git
 
