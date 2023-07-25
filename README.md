@@ -14,7 +14,7 @@ make the script executable
 chmod +x [script name]
 ```
 
-open the script with an text editor and execute the script
+execute the script
 
 ```sh
 ./[script name]
