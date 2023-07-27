@@ -242,7 +242,7 @@ then
 	then
 		FIRMWARE_PACKAGES='sof-firmware alsa-firmware'
 		DEPENDENCY_PACKAGES='gtk4 qt5-wayland qt6-wayland rustup'
-		SYSTEM_PACKAGES='base-devel git openssh ttf-nerd-fonts-symbols starhipt'
+		SYSTEM_PACKAGES='base-devel git openssh ttf-nerd-fonts-symbols starship'
 		AUDIO_PACKAGES='pipewire wireplumber pipewire-audio pipewire-alsa pipewire-pulse pipewire-jack'
 		USER_PACKAGES='xdg-desktop-portal-wlr dunst polkit polkit-gnome wofi udisks2 waybar kitty'
 		UTIL_PACKAGES='neovim man-db man-pages texinfo'
@@ -307,6 +307,8 @@ then
 
 	cd ..
 
+	. /install-vars
+
 	if [ "$TYPE" = 'base' ]
 	then
 		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-base dotfiles
@@ -324,8 +326,6 @@ then
 	rm -rf repositories
 
 	git --git-dir=.dotfiles --work-tree=$HOME config status.showUntrackedFiles.no
-
-	. /install-vars
 
 	AUR_PACKAGES=''
 
