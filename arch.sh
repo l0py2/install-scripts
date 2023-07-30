@@ -106,6 +106,7 @@ then
 		'Select the desired installation type' 0 0 0 \
 		'base' 'base' \
 		'hyprland' 'hyprland' \
+		'dwm' 'dwm' \
 		3>&1 1>&2 2>&3)
 
 	echo '#!/bin/sh' > install-vars.sh
@@ -244,7 +245,15 @@ then
 		DEPENDENCY_PACKAGES='gtk4 qt5-wayland qt6-wayland rustup'
 		SYSTEM_PACKAGES='base-devel git openssh ttf-nerd-fonts-symbols starship'
 		AUDIO_PACKAGES='pipewire wireplumber pipewire-audio pipewire-alsa pipewire-pulse pipewire-jack'
-		USER_PACKAGES='xdg-desktop-portal-wlr dunst polkit polkit-gnome wofi udisks2 waybar kitty'
+		USER_PACKAGES='xdg-desktop-portal xdg-desktop-portal-wlr dunst polkit polkit-gnome wofi udisks2 waybar kitty'
+		UTIL_PACKAGES='neovim man-db man-pages texinfo'
+	elif [ "$TYPE" = 'dwm' ]
+	then
+		FIRMWARE_PACKAGES='sof-firmware alsa-firmware'
+		DEPENDENCY_PACKAGES='gtk4 rustup libx11 libxft libxinerama'
+		SYSTEM_PACKAGES='base-devel git openssh ttf-nerd-fonts-symbols starship xorg-server xorg-xinit'
+		AUDIO_PACKAGES='pulseaudio pulseaudio-alsa jack2 pulseaudio-jack'
+		USER_PACKAGES='picom dunst polkit polkit-gnome udisks2 kitty feh'
 		UTIL_PACKAGES='neovim man-db man-pages texinfo'
 	else
 		DEPENDENCY_PACKAGES='rustup'
@@ -309,12 +318,36 @@ then
 
 	. /install-vars
 
+	if [ "$TYPE" = 'dwm' ]
+	then
+		git clone https://github.com/l0py2/dwm
+
+		git clone https://github.com/l0py2/dmenu
+
+		cd dwm
+
+		make
+
+		sudo make install
+
+		cd ../dmenu
+
+		make
+
+		sudo make install
+
+		cd ..
+	fi
+
 	if [ "$TYPE" = 'base' ]
 	then
 		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-base dotfiles
 	elif [ "$TYPE" = 'hyprland' ]
 	then
 		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-hyprland dotfiles
+	elif [ "$TYPE" = 'dwm' ]
+	then
+		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-dwm dotfiles
 	fi
 
 	rm dotfiles/.git
@@ -325,7 +358,7 @@ then
 
 	rm -rf repositories
 
-	git --git-dir=.dotfiles --work-tree=$HOME config status.showUntrackedFiles.no
+	git --git-dir=$HOME/.dotfiles --work-tree=$HOME config status.showUntrackedFiles no
 
 	AUR_PACKAGES=''
 
