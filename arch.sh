@@ -2,9 +2,9 @@
 
 if [ ! $1 ] || [ "$1" = '--help' ]
 then
-	echo 'Automated Arch Linux install script quick guide\n'
-	echo 'Use --init to start an new configuration'
-	echo 'Use --install to install based on the current configuration'
+	printf 'Automated Arch Linux install script quick guide\n\n'
+	printf 'Use --init to start an new configuration\n'
+	printf 'Use --install to install based on the current configuration\n'
 elif [ "$1" = '--init' ]
 then
 	whiptail --title 'Arch Linux install script' --msgbox \
@@ -109,18 +109,18 @@ then
 		'dwm' 'dwm' \
 		3>&1 1>&2 2>&3)
 
-	echo '#!/bin/sh' > install-vars.sh
-	echo "KEYMAP='$KEYMAP'" >> install-vars.sh
-	echo "EFI_PARTITION='$EFI_PARTITION'" >> install-vars.sh
-	echo "FORMAT_EFI_PARTITION='$FORMAT_EFI_PARTITION'" >> install-vars.sh
-	echo "SWAP_PARTITION='$SWAP_PARTITION'" >> install-vars.sh
-	echo "ROOT_PARTITION='$ROOT_PARTITION'" >> install-vars.sh
-	echo "LOCALE='$LOCALE'" >> install-vars.sh
-	echo "TIMEZONE='$TIMEZONE'" >> install-vars.sh
-	echo "HOSTNAME='$HOSTNAME'" >> install-vars.sh
-	echo "USERNAME='$USERNAME'" >> install-vars.sh
-	echo "MICROCODE='$MICROCODE'" >> install-vars.sh
-	echo "TYPE='$TYPE'" >> install-vars.sh
+	printf '#!/bin/sh\n' > install-vars.sh
+	printf "KEYMAP='$KEYMAP'\n" >> install-vars.sh
+	printf "EFI_PARTITION='$EFI_PARTITION'\n" >> install-vars.sh
+	printf "FORMAT_EFI_PARTITION='$FORMAT_EFI_PARTITION'\n" >> install-vars.sh
+	printf "SWAP_PARTITION='$SWAP_PARTITION'\n" >> install-vars.sh
+	printf "ROOT_PARTITION='$ROOT_PARTITION'\n" >> install-vars.sh
+	printf "LOCALE='$LOCALE'\n" >> install-vars.sh
+	printf "TIMEZONE='$TIMEZONE'\n" >> install-vars.sh
+	printf "HOSTNAME='$HOSTNAME'\n" >> install-vars.sh
+	printf "USERNAME='$USERNAME'\n" >> install-vars.sh
+	printf "MICROCODE='$MICROCODE'\n" >> install-vars.sh
+	printf "TYPE='$TYPE'\n" >> install-vars.sh
 elif [ "$1" = '--install' ]
 then
 	. ./install-vars.sh
@@ -169,7 +169,7 @@ then
 
 	chmod 777 /mnt/install-script /mnt/install-vars
 
-	echo "PASSWORD='$PASSWORD'" >> /mnt/install-vars
+	printf "PASSWORD='$PASSWORD'\n" >> /mnt/install-vars
 
 	arch-chroot /mnt /install-script root
 
@@ -184,29 +184,29 @@ then
 
 	HOOK_FILE='/usr/share/libalpm/hooks/shell-relink.hoo'
 
-	echo '[Trigger]' > $HOOK_FILE
-	echo 'Type = Package' >> $HOOK_FILE
-	echo 'Operation = Upgrade' >> $HOOK_FILE
-	echo 'Target = bash\n' >> $HOOK_FILE
-	echo '[Action]' >> $HOOK_FILE
-	echo 'Description = Re-pointing /bin/sh to dash...' >> $HOOK_FILE
-	echo 'When = PostTransaction' >> $HOOK_FILE
-	echo 'Exec = /usr/bin/ln -sfT dash /usr/bin/sh' >> $HOOK_FILE
-	echo 'Depends = dash'
+	printf '[Trigger]\n' > $HOOK_FILE
+	printf 'Type = Package\n' >> $HOOK_FILE
+	printf 'Operation = Upgrade\n' >> $HOOK_FILE
+	printf 'Target = bash\n\n' >> $HOOK_FILE
+	printf '[Action]\n' >> $HOOK_FILE
+	printf 'Description = Re-pointing /bin/sh to dash...\n' >> $HOOK_FILE
+	printf 'When = PostTransaction\n' >> $HOOK_FILE
+	printf 'Exec = /usr/bin/ln -sfT dash /usr/bin/sh\n' >> $HOOK_FILE
+	printf 'Depends = dash\n'
 
-	echo "KEYMAP=$KEYMAP" > /etc/vconsole.conf
+	printf "KEYMAP=$KEYMAP\n" > /etc/vconsole.conf
 
 	sed -i "s/#$LOCALE/$LOCALE/" /etc/locale.gen
 
 	locale-gen
 
-	echo "LANG=$LOCALE" > /etc/locale.conf
+	printf "LANG=$LOCALE\n" > /etc/locale.conf
 
-	echo "$HOSTNAME" > /etc/hostname
+	printf "$HOSTNAME\n" > /etc/hostname
 
-	echo '127.0.0.1\tlocalhost' > /etc/hosts
-	echo '::1\t\tlocalhost' >> /etc/hosts
-	echo "127.0.1.1\t$HOSTNAME" >> /etc/hosts
+	printf '127.0.0.1\tlocalhost\n' > /etc/hosts
+	printf '::1\t\tlocalhost\n' >> /etc/hosts
+	printf "127.0.1.1\t$HOSTNAME\n" >> /etc/hosts
 
 	pacman -S --noconfirm networkmanager
 
@@ -216,10 +216,10 @@ then
 
 	useradd -m -G wheel "$USERNAME"
 
-	echo '%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp' >> /etc/sudoers
+	printf '%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> /etc/sudoers
 
-	echo "root:$PASSWORD" | chpasswd
-	echo "$USERNAME:$PASSWORD" | chpasswd
+	printf "root:$PASSWORD\n" | chpasswd
+	printf "$USERNAME:$PASSWORD\n" | chpasswd
 
 	pacman -S --noconfirm grub efibootmgr
 
@@ -241,20 +241,20 @@ then
 
 	if [ "$TYPE" = 'hyprland' ]
 	then
-		FIRMWARE_PACKAGES='sof-firmware alsa-firmware'
-		DEPENDENCY_PACKAGES='gtk4 qt5-wayland qt6-wayland rustup'
-		SYSTEM_PACKAGES='base-devel git openssh ttf-nerd-fonts-symbols starship'
-		AUDIO_PACKAGES='pipewire wireplumber pipewire-audio pipewire-alsa pipewire-pulse pipewire-jack'
-		USER_PACKAGES='xdg-desktop-portal xdg-desktop-portal-wlr dunst polkit polkit-gnome wofi udisks2 waybar kitty'
-		UTIL_PACKAGES='neovim man-db man-pages texinfo'
+		FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
+		DEPENDENCY_PACKAGES='qt5-wayland qt6-wayland gtk4 rustup'
+		SYSTEM_PACKAGES='base-devel git openssh starship ttf-nerd-fonts-symbols'
+		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
+		USER_PACKAGES='dunst kitty polkit polkit-gnome udisks2 waybar wofi xdg-desktop-portal xdg-desktop-portal-wlr'
+		UTIL_PACKAGES='man-db man-pages neovim texinfo'
 	elif [ "$TYPE" = 'dwm' ]
 	then
-		FIRMWARE_PACKAGES='sof-firmware alsa-firmware'
-		DEPENDENCY_PACKAGES='gtk4 rustup libx11 libxft libxinerama'
-		SYSTEM_PACKAGES='base-devel git openssh ttf-nerd-fonts-symbols starship xorg-server xorg-xinit'
-		AUDIO_PACKAGES='pulseaudio pulseaudio-alsa jack2 pulseaudio-jack'
-		USER_PACKAGES='picom dunst polkit polkit-gnome udisks2 kitty feh'
-		UTIL_PACKAGES='neovim man-db man-pages texinfo'
+		FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
+		DEPENDENCY_PACKAGES='gtk4 libx11 libxft libxinerama rustup'
+		SYSTEM_PACKAGES='base-devel git openssh starship ttf-nerd-fonts-symbols xorg-server xorg-xinit'
+		AUDIO_PACKAGES='jack2 pulseaudio pulseaudio-alsa pulseaudio-jack'
+		USER_PACKAGES='dunst feh kitty picom polkit polkit-gnome udisks2'
+		UTIL_PACKAGES='man-db man-pages neovim texinfo'
 	else
 		DEPENDENCY_PACKAGES='rustup'
 		SYSTEM_PACKAGES='base-devel git'
@@ -295,7 +295,7 @@ then
 
 	sed -i '$d' /etc/sudoers
 
-	echo '%wheel ALL=(ALL:ALL) ALL' >> /etc/sudoers
+	printf '%wheel ALL=(ALL:ALL) ALL\n' >> /etc/sudoers
 elif [ "$1" = 'user' ]
 then
 	rustup default stable
@@ -372,5 +372,5 @@ then
 		paru -S --noconfirm $AUR_PACKAGES
 	fi
 else
-	echo 'Use --help to get help'
+	printf 'Use --help to get help\n'
 fi
