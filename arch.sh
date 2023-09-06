@@ -235,6 +235,7 @@ then
 	FIRMWARE_PACKAGES=''
 	DEPENDENCY_PACKAGES=''
 	SYSTEM_PACKAGES=''
+	FONT_PACKAGES=''
 	AUDIO_PACKAGES=''
 	USER_PACKAGES=''
 	UTIL_PACKAGES=''
@@ -243,7 +244,8 @@ then
 	then
 		FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
 		DEPENDENCY_PACKAGES='qt5-wayland qt6-wayland gtk4 rustup'
-		SYSTEM_PACKAGES='base-devel git openssh starship ttf-nerd-fonts-symbols'
+		SYSTEM_PACKAGES='base-devel git openssh starship'
+		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
 		USER_PACKAGES='dunst kitty polkit polkit-gnome udisks2 waybar wofi xdg-desktop-portal xdg-desktop-portal-wlr'
 		UTIL_PACKAGES='man-db man-pages neovim texinfo'
@@ -251,7 +253,8 @@ then
 	then
 		FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
 		DEPENDENCY_PACKAGES='gtk4 libx11 libxft libxinerama rustup'
-		SYSTEM_PACKAGES='base-devel git openssh starship ttf-nerd-fonts-symbols xorg-server xorg-xinit'
+		SYSTEM_PACKAGES='base-devel git openssh starship xorg-server xorg-xinit'
+		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='jack2 pulseaudio pulseaudio-alsa pulseaudio-jack'
 		USER_PACKAGES='dunst feh kitty picom polkit polkit-gnome udisks2'
 		UTIL_PACKAGES='man-db man-pages neovim texinfo'
@@ -274,6 +277,11 @@ then
 	if [ -n "$SYSTEM_PACKAGES" ]
 	then
 		pacman -S --noconfirm $SYSTEM_PACKAGES
+	fi
+
+	if [ -n "$FONT_PACKAGES" ]
+	then
+		pacman -S --noconfirm $FONT_PACKAGES
 	fi
 
 	if [ -n "$AUDIO_PACKAGES" ]
