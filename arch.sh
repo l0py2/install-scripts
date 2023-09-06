@@ -216,7 +216,7 @@ then
 
 	useradd -m -G wheel "$USERNAME"
 
-	printf '%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> /etc/sudoers
+	printf '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> /etc/sudoers
 
 	printf "root:$PASSWORD\n" | chpasswd
 	printf "$USERNAME:$PASSWORD\n" | chpasswd
@@ -295,7 +295,7 @@ then
 
 	sed -i '$d' /etc/sudoers
 
-	printf '%wheel ALL=(ALL:ALL) ALL\n' >> /etc/sudoers
+	printf '%%wheel ALL=(ALL:ALL) ALL\n' >> /etc/sudoers
 elif [ "$1" = 'user' ]
 then
 	rustup default stable
