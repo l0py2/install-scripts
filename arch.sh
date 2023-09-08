@@ -178,6 +178,10 @@ elif [ "$1" = 'root' ]
 then
 	. /install-vars
 
+	ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+
+	hwclock --systohc
+
 	pacman -S --noconfirm dash
 
 	ln -sfT dash /usr/bin/sh
