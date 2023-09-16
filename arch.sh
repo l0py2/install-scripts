@@ -376,7 +376,7 @@ then
 
 	if [ "$TYPE" = 'hyprland' ]
 	then
-		AUR_PACKAGES='hyprland-git swww'
+		AUR_PACKAGES='hyprland-git'
 	fi
 
 	if [ -n "$AUR_PACKAGES" ]
