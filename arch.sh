@@ -30,6 +30,8 @@ then
 	whiptail --title 'Disk partitioning' --yesno \
 		'Have you already partitioned the desired partitions for the installation' 0 0
 
+	DISKS=$(lsblk -ln | grep 'disk' | awk '{print $1" "$1}' | tr '\n' ' ')
+
 	if [ $? -eq 1 ]
 	then
 		PARTITION_UTILITY=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
@@ -37,8 +39,6 @@ then
 			'fdisk' 'fdisk' \
 			'cfdisk' 'cfdisk' \
 			3>&1 1>&2 2>&3)
-
-		DISKS=$(lsblk -ln | grep 'disk' | awk '{print $1" "$1}' | tr '\n' ' ')
 
 		CONTINUE_PARTITIONING=0
 
@@ -69,6 +69,10 @@ then
 			'Do not format EFI partition' 0 0
 
 		FORMAT_EFI_PARTITION=$?
+	else
+		BIOS_DISK=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
+			'Select the disk that contains desired BIOS boot partition' 0 0 0 $DISKS \
+			3>&1 1>&2 2>&3)
 	fi
 
 	SWAP_PARTITION=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
@@ -123,6 +127,7 @@ then
 
 	printf '#!/bin/sh\n' > install-vars.sh
 	printf "KEYMAP='$KEYMAP'\n" >> install-vars.sh
+	printf "BIOS_DISK='$BIOS_DISK'\n" >> install-vars.sh
 	printf "EFI_PARTITION='$EFI_PARTITION'\n" >> install-vars.sh
 	printf "FORMAT_EFI_PARTITION='$FORMAT_EFI_PARTITION'\n" >> install-vars.sh
 	printf "SWAP_PARTITION='$SWAP_PARTITION'\n" >> install-vars.sh
@@ -136,15 +141,6 @@ then
 elif [ "$1" = '--install' ]
 then
 	. ./install-vars.sh
-
-	EFI_SYSTEM=0
-
-	ls /sys/firmware/efi > /dev/null 2>&1
-
-	if [ $? -eq 0 ]
-	then
-		EFI_SYSTEM=1
-	fi
 
 	loadkeys "$KEYMAP"
 
@@ -161,7 +157,7 @@ then
 
 	mount "/dev/$ROOT_PARTITION" /mnt
 
-	if [ $EFI_SYSTEM -eq 1 ]
+	if [ -z "$BIOS_DISK" ]
 	then
 		if [ $FORMAT_EFI_PARTITION -eq 1 ]
 		then
@@ -191,7 +187,6 @@ then
 	chmod 777 /mnt/install-script /mnt/install-vars
 
 	printf "PASSWORD='$PASSWORD'\n" >> /mnt/install-vars
-	printf "EFI_SYSTEM=$EFI_SYSTEM\n" >> /mnt/install-vars
 
 	arch-chroot /mnt /install-script root
 
@@ -249,15 +244,13 @@ then
 
 	pacman -S --noconfirm grub
 
-	if [ $EFI_SYSTEM -eq 1 ]
+	if [ -z "$BIOS_DISK" ]
 	then
 		pacman -S --noconfirm efibootmgr
 
 		grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 	else
-		BIOS_DISK="/dev/$(printf "$ROOT_PARTITION" | grep -o '[a-Z]*')"
-
-		grub-install --target=i386-pc "$BIOS_DISK"
+		grub-install --target=i386-pc "/dev/$BIOS_DISK"
 	fi
 
 	if [ -n "$MICROCODE" ]
