@@ -7,6 +7,15 @@ then
 	printf 'Use --install to install based on the current configuration\n'
 elif [ "$1" = '--init' ]
 then
+	EFI_SYSTEM=0
+
+	ls /sys/firmware/efi
+
+	if [ $? -eq 0 ]
+	then
+		EFI_SYSTEM=1
+	fi
+
 	whiptail --title 'Arch Linux install script' --msgbox \
 		'Welcome to l0py2 automated Arch Linux install script' 0 0
 
@@ -50,14 +59,17 @@ then
 
 	PARTITIONS=$(lsblk -ln | grep 'part' | awk '{print $1" "$1}' | tr '\n' ' ')
 
-	EFI_PARTITION=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
-		'Select the desired EFI partition' 0 0 0 $PARTITIONS \
-		3>&1 1>&2 2>&3)
+	if [ $EFI_SYSTEM -eq 1 ]
+	then
+		EFI_PARTITION=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
+			'Select the desired EFI partition' 0 0 0 $PARTITIONS \
+			3>&1 1>&2 2>&3)
 
-	whiptail --title 'Disk partitioning' --nocancel --yesno \
-		'Do not format EFI partition' 0 0
+		whiptail --title 'Disk partitioning' --nocancel --yesno \
+			'Do not format EFI partition' 0 0
 
-	FORMAT_EFI_PARTITION=$?
+		FORMAT_EFI_PARTITION=$?
+	fi
 
 	SWAP_PARTITION=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
 		'Select the desired swap partition or none for none' 0 0 0 '' 'none' $PARTITIONS \
@@ -169,7 +181,17 @@ then
 
 	chmod 777 /mnt/install-script /mnt/install-vars
 
+	EFI_SYSTEM=0
+
+	ls /sys/firmware/efi
+
+	if [ $? -eq 0 ]
+	then
+		EFI_SYSTEM=1
+	fi
+
 	printf "PASSWORD='$PASSWORD'\n" >> /mnt/install-vars
+	printf "EFI_SYSTEM=$EFI_SYSTEM\n" >> /mnt/install-vars
 
 	arch-chroot /mnt /install-script root
 
@@ -186,7 +208,7 @@ then
 
 	ln -sfT dash /usr/bin/sh
 
-	HOOK_FILE='/usr/share/libalpm/hooks/shell-relink.hoo'
+	HOOK_FILE='/usr/share/libalpm/hooks/shell-relink.hook'
 
 	printf '[Trigger]\n' > $HOOK_FILE
 	printf 'Type = Package\n' >> $HOOK_FILE
@@ -225,9 +247,18 @@ then
 	printf "root:$PASSWORD\n" | chpasswd
 	printf "$USERNAME:$PASSWORD\n" | chpasswd
 
-	pacman -S --noconfirm grub efibootmgr
+	pacman -S --noconfirm grub
 
-	grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+	if [ $EFI_SYSTEM -eq 1 ]
+	then
+		pacman -S --noconfirm efibootmgr
+
+		grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+	else
+		BIOS_DISK="/dev/$(printf "$ROOT_PARTITION" | grep -o '[a-Z]*')"
+
+		grub-install --target=i386-pc "$BIOS_DISK"
+	fi
 
 	if [ -n "$MICROCODE" ]
 	then
