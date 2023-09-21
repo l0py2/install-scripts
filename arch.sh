@@ -9,7 +9,7 @@ elif [ "$1" = '--init' ]
 then
 	EFI_SYSTEM=0
 
-	ls /sys/firmware/efi
+	ls /sys/firmware/efi > /dev/null 2>&1
 
 	if [ $? -eq 0 ]
 	then
@@ -137,6 +137,15 @@ elif [ "$1" = '--install' ]
 then
 	. ./install-vars.sh
 
+	EFI_SYSTEM=0
+
+	ls /sys/firmware/efi > /dev/null 2>&1
+
+	if [ $? -eq 0 ]
+	then
+		EFI_SYSTEM=1
+	fi
+
 	loadkeys "$KEYMAP"
 
 	PASSWORD=$(whiptail --title 'User' --nocancel --inputbox \
@@ -150,22 +159,22 @@ then
 
 	mkfs.ext4 -F "/dev/$ROOT_PARTITION"
 
-	if [ $FORMAT_EFI_PARTITION -eq 1 ]
+	mount "/dev/$ROOT_PARTITION" /mnt
+
+	if [ $EFI_SYSTEM -eq 1 ]
 	then
-		mkfs.fat -F 32 "/dev/$EFI_PARTITION"
+		if [ $FORMAT_EFI_PARTITION -eq 1 ]
+		then
+			mkfs.fat -F 32 "/dev/$EFI_PARTITION"
+		fi
+
+		mount --mkdir "/dev/$EFI_PARTITION" /mnt/boot
 	fi
 
 	if [ -n "$SWAP_PARTITION" ]
 	then
 		mkswap "/dev/$SWAP_PARTITION"
-	fi
 
-	mount "/dev/$ROOT_PARTITION" /mnt
-
-	mount --mkdir "/dev/$EFI_PARTITION" /mnt/boot
-
-	if [ -n "$SWAP_PARTITION" ]
-	then
 		swapon "/dev/$SWAP_PARTITION"
 	fi
 
@@ -180,15 +189,6 @@ then
 	cp ./install-vars.sh /mnt/install-vars
 
 	chmod 777 /mnt/install-script /mnt/install-vars
-
-	EFI_SYSTEM=0
-
-	ls /sys/firmware/efi
-
-	if [ $? -eq 0 ]
-	then
-		EFI_SYSTEM=1
-	fi
 
 	printf "PASSWORD='$PASSWORD'\n" >> /mnt/install-vars
 	printf "EFI_SYSTEM=$EFI_SYSTEM\n" >> /mnt/install-vars
