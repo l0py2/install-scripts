@@ -27,10 +27,10 @@ then
 
 	loadkeys "$KEYMAP"
 
+	DISKS=$(lsblk -ln | grep 'disk' | awk '{print $1" "$1}' | tr '\n' ' ')
+
 	whiptail --title 'Disk partitioning' --yesno \
 		'Have you already partitioned the desired partitions for the installation' 0 0
-
-	DISKS=$(lsblk -ln | grep 'disk' | awk '{print $1" "$1}' | tr '\n' ' ')
 
 	if [ $? -eq 1 ]
 	then
