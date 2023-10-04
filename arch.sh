@@ -275,7 +275,7 @@ then
 		SYSTEM_PACKAGES='base-devel git openssh starship'
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
-		USER_PACKAGES='dunst kitty polkit polkit-gnome swaybg thunar udisks2 waybar wofi xdg-desktop-portal-wlr'
+		USER_PACKAGES='dunst kitty polkit polkit-gnome swaybg thunar udisks2 waybar wofi xdg-desktop-portal-wlr xdg-user-dirs'
 		UTIL_PACKAGES='man-db man-pages neovim texinfo'
 	elif [ "$TYPE" = 'dwm' ]
 	then
@@ -284,7 +284,7 @@ then
 		SYSTEM_PACKAGES='base-devel git openssh starship xorg-server xorg-xinit'
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='jack2 pulseaudio pulseaudio-alsa pulseaudio-jack'
-		USER_PACKAGES='dunst feh kitty picom polkit polkit-gnome thunar udisks2'
+		USER_PACKAGES='dunst feh kitty picom polkit polkit-gnome thunar udisks2 xdg-user-dirs'
 		UTIL_PACKAGES='man-db man-pages neovim texinfo'
 	else
 		DEPENDENCY_PACKAGES='rustup'
@@ -353,6 +353,11 @@ then
 	cd ..
 
 	. /install-vars
+
+	if [ "$TYPE" = 'dwm' ] || [ "$TYPE" = 'hyprland' ]
+	then
+		xdg-user-dirs-update
+	fi
 
 	if [ "$TYPE" = 'dwm' ]
 	then
