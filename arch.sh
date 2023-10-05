@@ -1,5 +1,14 @@
 #!/bin/sh
 
+install_packages() {
+	if [ -n "$1" ]
+	then
+		printf "Installing: $1\n"
+
+		pacman -S --noconfirm $1 >> /dev/null 2>&1
+	fi
+}
+
 if [ ! $1 ] || [ "$1" = '--help' ]
 then
 	printf 'Automated Arch Linux install script quick guide\n\n'
@@ -204,7 +213,7 @@ then
 
 	hwclock --systohc
 
-	pacman -S --noconfirm dash
+	install_packages 'dash'
 
 	ln -sfT dash /usr/bin/sh
 
@@ -232,11 +241,11 @@ then
 	printf '::1\t\tlocalhost\n' >> /etc/hosts
 	printf "127.0.1.1\t$HOSTNAME\n" >> /etc/hosts
 
-	pacman -S --noconfirm networkmanager
+	install_packages 'networkmanager'
 
 	systemctl enable NetworkManager.service
 
-	pacman -S --noconfirm sudo
+	install_packages 'sudo'
 
 	useradd -m -G wheel "$USERNAME"
 
@@ -245,11 +254,11 @@ then
 	printf "root:$PASSWORD\n" | chpasswd
 	printf "$USERNAME:$PASSWORD\n" | chpasswd
 
-	pacman -S --noconfirm grub
+	install_packages 'grub'
 
 	if [ -z "$BIOS_DISK" ]
 	then
-		pacman -S --noconfirm efibootmgr
+		install_packages 'efibootmgr'
 
 		grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 	else
@@ -258,7 +267,7 @@ then
 
 	if [ -n "$MICROCODE" ]
 	then
-		pacman -S --noconfirm $MICROCODE
+		install_packages "$MICROCODE"
 	fi
 
 	grub-mkconfig -o /boot/grub/grub.cfg
@@ -297,46 +306,20 @@ then
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
 		USER_PACKAGES='gnome udisks2'
+		UTIL_PACKAGES='man-db man-pages neovim texinfo'
 	else
 		DEPENDENCY_PACKAGES='rustup'
 		SYSTEM_PACKAGES='base-devel git'
 		UTIL_PACKAGES='neovim'
 	fi
 
-	if [ -n "$FIRMWARE_PACKAGES" ]
-	then
-		pacman -S --noconfirm $FIRMWARE_PACKAGES
-	fi
-
-	if [ -n "$DEPENDENCY_PACKAGES" ]
-	then
-		pacman -S --noconfirm $DEPENDENCY_PACKAGES
-	fi
-
-	if [ -n "$SYSTEM_PACKAGES" ]
-	then
-		pacman -S --noconfirm $SYSTEM_PACKAGES
-	fi
-
-	if [ -n "$FONT_PACKAGES" ]
-	then
-		pacman -S --noconfirm $FONT_PACKAGES
-	fi
-
-	if [ -n "$AUDIO_PACKAGES" ]
-	then
-		pacman -S --noconfirm $AUDIO_PACKAGES
-	fi
-
-	if [ -n "$USER_PACKAGES" ]
-	then
-		pacman -S --noconfirm $USER_PACKAGES
-	fi
-
-	if [ -n "$UTIL_PACKAGES" ]
-	then
-		pacman -S --noconfirm $UTIL_PACKAGES
-	fi
+	install_packages "$FIRMWARE_PACKAGES"
+	install_packages "$DEPENDENCY_PACKAGES"
+	install_packages "$SYSTEM_PACKAGES"
+	install_packages "$FONT_PACKAGES"
+	install_packages "$AUDIO_PACKAGES"
+	install_packages "$USER_PACKAGES"
+	install_packages "$UTIL_PACKAGES"
 
 	if [ "$TYPE" = 'gnome' ]
 	then
