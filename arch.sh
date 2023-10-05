@@ -123,6 +123,7 @@ then
 		'base' 'base' \
 		'hyprland' 'hyprland' \
 		'dwm' 'dwm' \
+		'gnome' 'gnome' \
 		3>&1 1>&2 2>&3)
 
 	printf '#!/bin/sh\n' > install-vars.sh
@@ -180,6 +181,10 @@ then
 
 	genfstab -U /mnt >> /mnt/etc/fstab
 
+	localectl set-keymap "$KEYMAP"
+
+	cp /etc/vconsole.conf /mnt/etc/vconsole.conf
+
 	cp $0 /mnt/install-script
 
 	cp ./install-vars.sh /mnt/install-vars
@@ -214,8 +219,6 @@ then
 	printf 'When = PostTransaction\n' >> $HOOK_FILE
 	printf 'Exec = /usr/bin/ln -sfT dash /usr/bin/sh\n' >> $HOOK_FILE
 	printf 'Depends = dash\n'
-
-	printf "KEYMAP=$KEYMAP\n" > /etc/vconsole.conf
 
 	sed -i "s/#$LOCALE/$LOCALE/" /etc/locale.gen
 
@@ -286,6 +289,14 @@ then
 		AUDIO_PACKAGES='jack2 pulseaudio pulseaudio-alsa pulseaudio-jack'
 		USER_PACKAGES='dunst feh kitty picom polkit polkit-gnome thunar udisks2 xdg-user-dirs'
 		UTIL_PACKAGES='man-db man-pages neovim texinfo'
+	elif [ "$TYPE" = 'gnome' ]
+	then
+		FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
+		DEPENDENCY_PACKAGES='rustup'
+		SYSTEM_PACKAGES='base-devel git openssh'
+		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
+		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
+		USER_PACKAGES='gnome udisks2'
 	else
 		DEPENDENCY_PACKAGES='rustup'
 		SYSTEM_PACKAGES='base-devel git'
@@ -327,6 +338,11 @@ then
 		pacman -S --noconfirm $UTIL_PACKAGES
 	fi
 
+	if [ "$TYPE" = 'gnome' ]
+	then
+		systemctl enable gdm.service
+	fi
+
 	sudo -u "$USERNAME" /install-script user
 
 	sed -i '$d' /etc/sudoers
@@ -354,7 +370,7 @@ then
 
 	. /install-vars
 
-	if [ "$TYPE" = 'dwm' ] || [ "$TYPE" = 'hyprland' ]
+	if [ "$TYPE" = 'dwm' ] || [ "$TYPE" = 'hyprland' ] || [ "$TYPE" = 'gnome' ]
 	then
 		xdg-user-dirs-update
 	fi
@@ -380,15 +396,14 @@ then
 		cd ..
 	fi
 
-	if [ "$TYPE" = 'base' ]
-	then
-		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-base dotfiles
-	elif [ "$TYPE" = 'hyprland' ]
+	if [ "$TYPE" = 'hyprland' ]
 	then
 		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-hyprland dotfiles
 	elif [ "$TYPE" = 'dwm' ]
 	then
 		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-dwm dotfiles
+	else
+		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-base dotfiles
 	fi
 
 	rm dotfiles/.git
