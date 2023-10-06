@@ -202,6 +202,7 @@ then
 	localectl set-keymap "$KEYMAP"
 
 	cp /etc/vconsole.conf /mnt/etc/vconsole.conf
+	cp /etc/X11/xorg.conf.d /mnt/etc/X11/xorg.conf.d
 
 	cp $0 /mnt/install-script
 
