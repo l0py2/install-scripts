@@ -9,6 +9,15 @@ install_packages() {
 	fi
 }
 
+install_packages_aur() {
+	if [ -n "$1" ]
+	then
+		printf "Installing: $1\n"
+
+		paru -S --noconfirm $1 >> /dev/null 2>&1
+	fi
+}
+
 if [ ! $1 ] || [ "$1" = '--help' ]
 then
 	printf 'Automated Arch Linux install script quick guide\n\n'
@@ -324,6 +333,8 @@ then
 	if [ "$TYPE" = 'gnome' ]
 	then
 		systemctl enable gdm.service
+
+		ln -s /dev/null /etc/udev/rules.d/61-gdm.rules
 	fi
 
 	sudo -u "$USERNAME" /install-script user
@@ -406,10 +417,7 @@ then
 		AUR_PACKAGES='hyprland-git'
 	fi
 
-	if [ -n "$AUR_PACKAGES" ]
-	then
-		paru -S --noconfirm $AUR_PACKAGES
-	fi
+	install_packages_aur "$AUR_PACKAGES"
 else
 	printf 'Use --help to get help\n'
 fi
