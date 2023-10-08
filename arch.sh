@@ -334,8 +334,6 @@ then
 	if [ "$TYPE" = 'gnome' ]
 	then
 		systemctl enable gdm.service
-
-		ln -s /dev/null /etc/udev/rules.d/61-gdm.rules
 	fi
 
 	sudo -u "$USERNAME" /install-script user
