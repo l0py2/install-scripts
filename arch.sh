@@ -202,7 +202,7 @@ then
 	localectl set-keymap "$KEYMAP"
 
 	cp /etc/vconsole.conf /mnt/etc/vconsole.conf
-	cp /etc/X11/xorg.conf.d /mnt/etc/X11/xorg.conf.d
+	cp -r /etc/X11/xorg.conf.d /mnt/etc/X11/xorg.conf.d
 
 	cp $0 /mnt/install-script
 
@@ -306,7 +306,7 @@ then
 		SYSTEM_PACKAGES='base-devel git openssh starship xorg-server xorg-xinit'
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
-		USER_PACKAGES='dunst feh kitty picom polkit polkit-gnome thunar udisks2 xdg-user-dirs'
+		USER_PACKAGES='dunst feh kitty picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs'
 		UTIL_PACKAGES='man-db man-pages neovim texinfo'
 	elif [ "$TYPE" = 'gnome' ]
 	then
