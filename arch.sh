@@ -1,5 +1,11 @@
 #!/bin/sh
 
+enable_service() {
+	printf "Enabling: $1\n"
+
+	systemctl enable $1.service >> /dev/null 2>&1
+}
+
 install_packages() {
 	if [ -n "$1" ]
 	then
@@ -16,6 +22,16 @@ install_packages_aur() {
 
 		paru -S --noconfirm $1 >> /dev/null 2>&1
 	fi
+}
+
+clone_dotfiles() {
+	git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/$1 dotfiles >> /dev/null 2>&1
+
+	rm dotfiles/.git
+
+	cp -r dotfiles/. $HOME
+
+	git --git-dir=$HOME/.dotfiles --work-tree=$HOME config status.showUntrackedFiles no >> /dev/null 2>&1
 }
 
 if [ ! $1 ] || [ "$1" = '--help' ]
@@ -170,6 +186,8 @@ then
 	whiptail --title 'User' --msgbox \
 		'The password will be used for root user too' 0 0
 
+	printf 'Formatting and mounting partitions'
+
 	umount -R /mnt
 
 	mkfs.ext4 -F "/dev/$ROOT_PARTITION"
@@ -193,16 +211,19 @@ then
 		swapon "/dev/$SWAP_PARTITION"
 	fi
 
+	printf 'Installing base system\n'
+
 	PACSTRAP_PACKAGES='base linux linux-firmware'
 
-	pacstrap -K /mnt $PACSTRAP_PACKAGES
+	pacstrap -K /mnt $PACSTRAP_PACKAGES >> /dev/null 2>&1
 
 	genfstab -U /mnt >> /mnt/etc/fstab
 
 	localectl set-keymap "$KEYMAP"
 
 	cp /etc/vconsole.conf /mnt/etc/vconsole.conf
-	cp -r /etc/X11/xorg.conf.d /mnt/etc/X11/xorg.conf.d
+	mkdir -p /mnt/etc/X11/xorg.conf.d
+	cp /etc/X11/xorg.conf.d/00-keyboard.conf /mnt/etc/X11/xorg.conf.d/00-keyboard.conf
 
 	cp $0 /mnt/install-script
 
@@ -247,13 +268,15 @@ then
 
 	printf "$HOSTNAME\n" > /etc/hostname
 
-	printf '127.0.0.1\tlocalhost\n' > /etc/hosts
-	printf '::1\t\tlocalhost\n' >> /etc/hosts
-	printf "127.0.1.1\t$HOSTNAME\n" >> /etc/hosts
+	HOSTS_FILE='/etc/hosts'
+
+	printf '127.0.0.1\tlocalhost\n' > $HOSTS_FILE
+	printf '::1\t\tlocalhost\n' >> $HOSTS_FILE
+	printf "127.0.1.1\t$HOSTNAME\n" >> $HOSTS_FILE
 
 	install_packages 'networkmanager'
 
-	systemctl enable NetworkManager.service
+	enable_service 'NetworkManager'
 
 	install_packages 'sudo'
 
@@ -333,7 +356,7 @@ then
 
 	if [ "$TYPE" = 'gnome' ]
 	then
-		systemctl enable gdm.service
+		enable_service 'gdm'
 	fi
 
 	sudo -u "$USERNAME" /install-script user
@@ -343,7 +366,7 @@ then
 	printf '%%wheel ALL=(ALL:ALL) ALL\n' >> /etc/sudoers
 elif [ "$1" = 'user' ]
 then
-	rustup default stable
+	rustup default stable >> /dev/null 2>&1
 
 	cd $HOME
 
@@ -351,13 +374,15 @@ then
 
 	cd repositories
 
-	git clone https://aur.archlinux.org/paru.git
+	printf 'Installing Paru\n'
+
+	git clone https://aur.archlinux.org/paru.git >> /dev/null 2>&1
 
 	cd paru
 
-	makepkg -si --noconfirm
+	makepkg -si --noconfirm >> /dev/null 2>&1
 
-	paru --gendb
+	paru --gendb >> /dev/null 2>&1
 
 	cd ..
 
@@ -370,44 +395,36 @@ then
 
 	if [ "$TYPE" = 'dwm' ]
 	then
-		git clone https://github.com/l0py2/dwm
+		git clone https://github.com/l0py2/dwm >> /dev/null 2>&1
 
-		git clone https://github.com/l0py2/dmenu
+		git clone https://github.com/l0py2/dmenu >> /dev/null 2>&1
 
 		cd dwm
 
-		make
+		make >> /dev/null 2>&1
 
-		sudo make install
+		sudo make install >> /dev/null 2>&1
 
 		cd ../dmenu
 
-		make
+		make >> /dev/null 2>&1
 
-		sudo make install
-
-		cd ..
+		sudo make install >> /dev/null 2>&1
 	fi
 
 	if [ "$TYPE" = 'hyprland' ]
 	then
-		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-hyprland dotfiles
+		clone_dotfiles 'dotfiles-hyprland'
 	elif [ "$TYPE" = 'dwm' ]
 	then
-		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-dwm dotfiles
+		clone_dotfiles 'dotfiles-dwm'
 	else
-		git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/dotfiles-base dotfiles
+		clone_dotfiles 'dotfiles-base'
 	fi
-
-	rm dotfiles/.git
-
-	cp -r dotfiles/. $HOME
 
 	cd $HOME
 
 	rm -rf repositories
-
-	git --git-dir=$HOME/.dotfiles --work-tree=$HOME config status.showUntrackedFiles no
 
 	AUR_PACKAGES=''
 
