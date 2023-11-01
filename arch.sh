@@ -34,6 +34,23 @@ clone_dotfiles() {
 	git --git-dir=$HOME/.dotfiles --work-tree=$HOME config status.showUntrackedFiles no >> /dev/null 2>&1
 }
 
+whiptail_msgbox() {
+	whiptail --title "$1" --msgbox "$2" 0 0
+}
+
+whiptail_yesno() {
+	whiptail --title "$1" --yesno "$2" 0 0
+}
+
+whiptail_menu() {
+	whiptail --title "$1" --nocancel --notags --menu "$2" 0 0 0 $3 \
+		3>&1 1>&2 2>&3
+}
+
+whiptail_inputbox() {
+	whiptail --title "$1" --nocancel --inputbox "$2" 0 0 3>&1 1>&2 2>&3
+}
+
 if [ ! $1 ] || [ "$1" = '--help' ]
 then
 	printf 'Automated Arch Linux install script quick guide\n\n'
@@ -50,42 +67,37 @@ then
 		EFI_SYSTEM=1
 	fi
 
-	whiptail --title 'Arch Linux install script' --msgbox \
-		'Welcome to l0py2 automated Arch Linux install script' 0 0
+	whiptail_msgbox 'Arch Linux install script' \
+		'Welcome to l0py2 automated Arch install script'
 
 	KEYMAPS=$(localectl list-keymaps | awk '{print $1" "$1}' | tr '\n' ' ')
 
-	KEYMAP=$(whiptail --title 'Keymap' --nocancel --notags --menu \
-		'Select the desired keymap' 0 0 0 $KEYMAPS \
-		3>&1 1>&2 2>&3)
+	KEYMAP=$(whiptail_menu 'Keymap' 'Select the desired keymap' "$KEYMAPS")
 
 	loadkeys "$KEYMAP"
 
 	DISKS=$(lsblk -ln | grep 'disk' | awk '{print $1" "$1}' | tr '\n' ' ')
 
-	whiptail --title 'Disk partitioning' --yesno \
-		'Have you already partitioned the desired partitions for the installation' 0 0
+	whiptail_yesno 'Disk partitioning' \
+		'Have you already partitioned the desired partitions for the installation'
 
 	if [ $? -eq 1 ]
 	then
-		PARTITION_UTILITY=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
-			'Select fdisk or cfdisk for partitioning' 0 0 0 \
-			'fdisk' 'fdisk' \
-			'cfdisk' 'cfdisk' \
-			3>&1 1>&2 2>&3)
+		PARTITION_UTILITY=$(whiptail_menu 'Disk partitioning' \
+			'Select fdisk or cfdisk for partitioning' \
+			'fdisk fdisk cfdisk cfdisk')
 
 		CONTINUE_PARTITIONING=0
 
 		while [ $CONTINUE_PARTITIONING -eq 0 ]
 		do
-			PARTITION_OPTION=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
-				'Select the desired disk to partition' 0 0 0 $DISKS \
-				3>&1 1>&2 2>&3)
+			PARTITION_OPTION=$(whiptail_menu 'Disk partitioning' \
+				'Select the desired disk to partition' "$DISKS")
 
 			$PARTITION_UTILITY "/dev/$PARTITION_OPTION"
 
-			whiptail --title 'Disk partitioning' --yesno \
-				'Continue partitioning the disks' 0 0
+			whiptail_yesno 'Disk partitioning' \
+				'Continue partitioning the disks'
 
 			CONTINUE_PARTITIONING=$?
 		done
@@ -95,96 +107,82 @@ then
 
 	if [ $EFI_SYSTEM -eq 1 ]
 	then
-		EFI_PARTITION=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
-			'Select the desired EFI partition' 0 0 0 $PARTITIONS \
-			3>&1 1>&2 2>&3)
+		EFI_PARTITION=$(whiptail_menu 'Disk partitioning' \
+			'Select the desired EFI partition' "$PARTITIONS")
 
-		whiptail --title 'Disk partitioning' --nocancel --yesno \
-			'Do not format EFI partition' 0 0
+		whiptail_yesno 'Disk partitioning' 'Do not format EFI partition'
 
 		FORMAT_EFI_PARTITION=$?
 	else
-		BIOS_DISK=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
-			'Select the disk that contains desired BIOS boot partition' 0 0 0 $DISKS \
-			3>&1 1>&2 2>&3)
+		BIOS_DISK=$(whiptail_menu 'Disk partitioning' \
+			'Select the disk that contains the desired BIOS boot partition' \
+			"$DISKS")
 	fi
 
-	SWAP_PARTITION=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
-		'Select the desired swap partition or none for none' 0 0 0 '' 'none' $PARTITIONS \
-		3>&1 1>&2 2>&3)
+	SWAP_PARTITION=$(whiptail_menu 'Disk partitioning' \
+		'Select the desired swap partition or none for none' "none none $PARTITIONS")
 
-	ROOT_PARTITION=$(whiptail --title 'Disk partitioning' --nocancel --notags --menu \
-		'Select the desired root partition' 0 0 0 $PARTITIONS \
-		3>&1 1>&2 2>&3)
+	ROOT_PARTITION=$(whiptail_menu 'Disk partitioning' \
+		'Select the desired root partition' "$PARTITIONS")
 
 	LOCALES=$(cat /etc/locale.gen | grep '.UTF-8 UTF-8' | tr -d '#' | awk '{print $1" "$1}' | tr '\n' ' ')
 
-	LOCALE=$(whiptail --title 'Locale' --nocancel --notags --menu \
-		'Select the desired locale' 0 0 0 $LOCALES \
-		3>&1 1>&2 2>&3)
+	LOCALE=$(whiptail_menu 'Locale' 'Select the desired locale' "$LOCALES")
 
 	ZONES=$(ls -1 /usr/share/zoneinfo | awk '{print $1" "$1}' | tr '\n' ' ')
 
-	ZONE=$(whiptail --title 'Timezone' --nocancel --notags --menu \
-		'Select the desired timezone zone' 0 0 0 $ZONES \
-		3>&1 1>&2 2>&3)
+	ZONE=$(whiptail_menu 'Timezone' 'Select the desired timezone zone' \
+		"$ZONES")
 
-	SUB_ZONES=$(ls -1 "/usr/share/zoneinfo/$ZONE" | awk '{print $1" "$1}' | tr '\n' ' ')
+	if [ -d "/usr/share/zoneinfo/$ZONE" ]
+	then
+		SUB_ZONES=$(ls -1 "/usr/share/zoneinfo/$ZONE" | awk '{print $1" "$1}' | tr '\n' ' ')
 
-	SUB_ZONE=$(whiptail --title 'Timezone' --nocancel --notags --menu \
-		'Select the desired timezone sub zone' 0 0 0 $SUB_ZONES \
-		3>&1 1>&2 2>&3)
+		SUB_ZONE=$(whiptail_menu 'Timezone' 'Select the desired timezone sub zone' \
+			"$SUB_ZONES")
+	fi
 
 	TIMEZONE="$ZONE/$SUB_ZONE"
 
-	HOSTNAME=$(whiptail --title 'Hostname' --nocancel --inputbox \
-		'Write the desired hostname' 0 0 \
-		3>&1 1>&2 2>&3)
+	HOSTNAME=$(whiptail_inputbox 'Hostname' 'Write the desired hostname')
 
-	USERNAME=$(whiptail --title 'User' --nocancel --inputbox \
-		'Write the desired user name' 0 0 \
-		3>&1 1>&2 2>&3)
+	USERNAME=$(whiptail_inputbox 'User' 'Write the desired user name')
 
-	MICROCODE=$(whiptail --title 'Microcode' --nocancel --notags --menu \
-		'Select the right microcode for your processor or none for none' 0 0 0 \
-		'amd-ucode' 'amd-ucode' \
-		'intel-ucode' 'intel-ucode' \
-		'' 'none' \
-		3>&1 1>&2 2>&3)
+	MICROCODE=$(whiptail_menu 'Microcode' \
+		'Select the right microcode for your processor or none for none' \
+		'amd-ucode amd-ucode intel-ucode intel-ucode none none')
 
-	TYPE=$(whiptail --title 'Type' --nocancel --notags --menu \
-		'Select the desired installation type' 0 0 0 \
-		'base' 'base' \
-		'hyprland' 'hyprland' \
-		'dwm' 'dwm' \
-		'gnome' 'gnome' \
-		3>&1 1>&2 2>&3)
+	TYPE=$(whiptail_menu 'Type' 'Select the desired installation type' \
+		'base base hyprland hyprland dwm dwm gnome gnome')
 
-	printf '#!/bin/sh\n' > install-vars.sh
-	printf "KEYMAP='$KEYMAP'\n" >> install-vars.sh
-	printf "BIOS_DISK='$BIOS_DISK'\n" >> install-vars.sh
-	printf "EFI_PARTITION='$EFI_PARTITION'\n" >> install-vars.sh
-	printf "FORMAT_EFI_PARTITION='$FORMAT_EFI_PARTITION'\n" >> install-vars.sh
-	printf "SWAP_PARTITION='$SWAP_PARTITION'\n" >> install-vars.sh
-	printf "ROOT_PARTITION='$ROOT_PARTITION'\n" >> install-vars.sh
-	printf "LOCALE='$LOCALE'\n" >> install-vars.sh
-	printf "TIMEZONE='$TIMEZONE'\n" >> install-vars.sh
-	printf "HOSTNAME='$HOSTNAME'\n" >> install-vars.sh
-	printf "USERNAME='$USERNAME'\n" >> install-vars.sh
-	printf "MICROCODE='$MICROCODE'\n" >> install-vars.sh
-	printf "TYPE='$TYPE'\n" >> install-vars.sh
+	ADDITIONAL_PACKAGES=$(whiptail_inputbox 'Additional packages' \
+		'Write the names of additional packages separated by spaces')
+
+	VARS_FILE='install-vars.sh'
+
+	printf '#!/bin/sh\n' > $VARS_FILE
+	printf "KEYMAP='$KEYMAP'\n" >> $VARS_FILE
+	printf "BIOS_DISK='$BIOS_DISK'\n" >> $VARS_FILE
+	printf "EFI_PARTITION='$EFI_PARTITION'\n" >> $VARS_FILE
+	printf "FORMAT_EFI_PARTITION='$FORMAT_EFI_PARTITION'\n" >> $VARS_FILE
+	printf "SWAP_PARTITION='$SWAP_PARTITION'\n" >> $VARS_FILE
+	printf "ROOT_PARTITION='$ROOT_PARTITION'\n" >> $VARS_FILE
+	printf "LOCALE='$LOCALE'\n" >> $VARS_FILE
+	printf "TIMEZONE='$TIMEZONE'\n" >> $VARS_FILE
+	printf "HOSTNAME='$HOSTNAME'\n" >> $VARS_FILE
+	printf "USERNAME='$USERNAME'\n" >> $VARS_FILE
+	printf "MICROCODE='$MICROCODE'\n" >> $VARS_FILE
+	printf "TYPE='$TYPE'\n" >> $VARS_FILE
+	printf "ADDITIONAL_PACKAGES='$ADDITIONAL_PACKAGES'\n" >> $VARS_FILE
 elif [ "$1" = '--install' ]
 then
 	. ./install-vars.sh
 
 	loadkeys "$KEYMAP"
 
-	PASSWORD=$(whiptail --title 'User' --nocancel --inputbox \
-		'Write the desired user password' 0 0 \
-		3>&1 1>&2 2>&3)
+	PASSWORD=$(whiptail_inputbox 'User' 'Write the desired user password')
 
-	whiptail --title 'User' --msgbox \
-		'The password will be used for root user too' 0 0
+	whiptail_msgbox 'User' 'The password will be used for root user too'
 
 	printf 'Formatting and mounting partitions'
 
@@ -204,7 +202,7 @@ then
 		mount --mkdir "/dev/$EFI_PARTITION" /mnt/boot
 	fi
 
-	if [ -n "$SWAP_PARTITION" ]
+	if [ "$SWAP_PARTITION" != 'none' ]
 	then
 		mkswap "/dev/$SWAP_PARTITION"
 
@@ -298,7 +296,7 @@ then
 		grub-install --target=i386-pc "/dev/$BIOS_DISK"
 	fi
 
-	if [ -n "$MICROCODE" ]
+	if [ "$MICROCODE" != 'none' ]
 	then
 		install_packages "$MICROCODE"
 	fi
@@ -353,6 +351,8 @@ then
 	install_packages "$AUDIO_PACKAGES"
 	install_packages "$USER_PACKAGES"
 	install_packages "$UTIL_PACKAGES"
+
+	install_packages "$ADDITIONAL_PACKAGES"
 
 	if [ "$TYPE" = 'gnome' ]
 	then
