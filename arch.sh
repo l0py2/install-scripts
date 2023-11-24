@@ -399,6 +399,10 @@ then
 
 		git clone https://github.com/l0py2/dmenu >> /dev/null 2>&1
 
+		git clone https://github.com/l0py2/dmenu-scripts >> /dev/null 2>&1
+
+		git clone https://github.com/l0py2/dwmblocks >> /dev/null 2>&1
+
 		cd dwm
 
 		make >> /dev/null 2>&1
@@ -406,6 +410,16 @@ then
 		sudo make install >> /dev/null 2>&1
 
 		cd ../dmenu
+
+		make >> /dev/null 2>&1
+
+		sudo make install >> /dev/null 2>&1
+
+		cd ../dmenu-scripts
+
+		make >> /dev/null 2>&1
+
+		cd ../dwmblocks
 
 		make >> /dev/null 2>&1
 
