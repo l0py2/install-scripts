@@ -153,7 +153,7 @@ then
 		'amd-ucode amd-ucode intel-ucode intel-ucode none none')
 
 	TYPE=$(whiptail_menu 'Type' 'Select the desired installation type' \
-		'base base hyprland hyprland dwm dwm gnome gnome')
+		'base base hyprland hyprland dwm dwm')
 
 	ADDITIONAL_PACKAGES=$(whiptail_inputbox 'Additional packages' \
 		'Write the names of additional packages separated by spaces')
@@ -329,15 +329,6 @@ then
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
 		USER_PACKAGES='dunst feh kitty picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs'
 		UTIL_PACKAGES='man-db man-pages neovim texinfo'
-	elif [ "$TYPE" = 'gnome' ]
-	then
-		FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
-		DEPENDENCY_PACKAGES='rustup'
-		SYSTEM_PACKAGES='base-devel git openssh'
-		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
-		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
-		USER_PACKAGES='gnome udisks2'
-		UTIL_PACKAGES='man-db man-pages neovim texinfo'
 	else
 		DEPENDENCY_PACKAGES='rustup'
 		SYSTEM_PACKAGES='base-devel git'
@@ -353,11 +344,6 @@ then
 	install_packages "$UTIL_PACKAGES"
 
 	install_packages "$ADDITIONAL_PACKAGES"
-
-	if [ "$TYPE" = 'gnome' ]
-	then
-		enable_service 'gdm'
-	fi
 
 	sudo -u "$USERNAME" /install-script user
 
