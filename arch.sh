@@ -8,7 +8,8 @@ SUDOERS_FILE='/etc/sudoers'
 
 enable_service() {
 	printf "Enabling: $1\n"
-systemctl enable $1.service >> /dev/null 2>&1
+
+	systemctl enable $1.service >> /dev/null 2>&1
 }
 
 install_packages() {
@@ -30,6 +31,8 @@ install_packages_aur() {
 }
 
 clone_repository() {
+	printf "Cloning: $1\n"
+
 	git clone $1 >> /dev/null 2>&1
 }
 
@@ -191,7 +194,7 @@ then
 
 	whiptail_msgbox 'User' 'The password will be used for root user too'
 
-	printf 'Formatting and mounting partitions'
+	printf 'Formatting and mounting partitions\n'
 
 	umount -R /mnt >> /dev/null 2>&1
 
