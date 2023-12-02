@@ -1,9 +1,14 @@
 #!/bin/sh
 
+VARS_FILE='install-vars.sh'
+
+SHELL_HOOK_FILE='/usr/share/libalpm/hooks/shell-relink.hook'
+HOSTS_FILE='/etc/hosts'
+SUDOERS_FILE='/etc/sudoers'
+
 enable_service() {
 	printf "Enabling: $1\n"
-
-	systemctl enable $1.service >> /dev/null 2>&1
+systemctl enable $1.service >> /dev/null 2>&1
 }
 
 install_packages() {
@@ -22,6 +27,10 @@ install_packages_aur() {
 
 		paru -S --noconfirm $1 >> /dev/null 2>&1
 	fi
+}
+
+clone_repository() {
+	git clone $1 >> /dev/null 2>&1
 }
 
 clone_dotfiles() {
@@ -158,8 +167,6 @@ then
 	ADDITIONAL_PACKAGES=$(whiptail_inputbox 'Additional packages' \
 		'Write the names of additional packages separated by spaces')
 
-	VARS_FILE='install-vars.sh'
-
 	printf '#!/bin/sh\n' > $VARS_FILE
 	printf "KEYMAP='$KEYMAP'\n" >> $VARS_FILE
 	printf "BIOS_DISK='$BIOS_DISK'\n" >> $VARS_FILE
@@ -186,9 +193,9 @@ then
 
 	printf 'Formatting and mounting partitions'
 
-	umount -R /mnt
+	umount -R /mnt >> /dev/null 2>&1
 
-	mkfs.ext4 -F "/dev/$ROOT_PARTITION"
+	mkfs.ext4 -F "/dev/$ROOT_PARTITION" >> /dev/null 2>&1
 
 	mount "/dev/$ROOT_PARTITION" /mnt
 
@@ -196,17 +203,17 @@ then
 	then
 		if [ $FORMAT_EFI_PARTITION -eq 1 ]
 		then
-			mkfs.fat -F 32 "/dev/$EFI_PARTITION"
+			mkfs.fat -F 32 "/dev/$EFI_PARTITION" >> /dev/null 2>&1
 		fi
 
-		mount --mkdir "/dev/$EFI_PARTITION" /mnt/boot
+		mount --mkdir "/dev/$EFI_PARTITION" /mnt/boot >> /dev/null 2>&1
 	fi
 
 	if [ "$SWAP_PARTITION" != 'none' ]
 	then
-		mkswap "/dev/$SWAP_PARTITION"
+		mkswap "/dev/$SWAP_PARTITION" >> /dev/null 2>&1
 
-		swapon "/dev/$SWAP_PARTITION"
+		swapon "/dev/$SWAP_PARTITION" >> /dev/null 2>&1
 	fi
 
 	printf 'Installing base system\n'
@@ -215,9 +222,9 @@ then
 
 	pacstrap -K /mnt $PACSTRAP_PACKAGES >> /dev/null 2>&1
 
-	genfstab -U /mnt >> /mnt/etc/fstab
+	genfstab -U /mnt >> /mnt/etc/fstab >> /dev/null 2>&1
 
-	localectl set-keymap "$KEYMAP"
+	localectl set-keymap "$KEYMAP" >> /dev/null 2>&1
 
 	cp /etc/vconsole.conf /mnt/etc/vconsole.conf
 	mkdir -p /mnt/etc/X11/xorg.conf.d
@@ -234,6 +241,8 @@ then
 	arch-chroot /mnt /install-script root
 
 	rm /mnt/install-script /mnt/install-vars
+
+	printf 'The installation is complete\n'
 elif [ "$1" = 'root' ]
 then
 	. /install-vars
@@ -246,27 +255,23 @@ then
 
 	ln -sfT dash /usr/bin/sh
 
-	HOOK_FILE='/usr/share/libalpm/hooks/shell-relink.hook'
-
-	printf '[Trigger]\n' > $HOOK_FILE
-	printf 'Type = Package\n' >> $HOOK_FILE
-	printf 'Operation = Upgrade\n' >> $HOOK_FILE
-	printf 'Target = bash\n\n' >> $HOOK_FILE
-	printf '[Action]\n' >> $HOOK_FILE
-	printf 'Description = Re-pointing /bin/sh to dash...\n' >> $HOOK_FILE
-	printf 'When = PostTransaction\n' >> $HOOK_FILE
-	printf 'Exec = /usr/bin/ln -sfT dash /usr/bin/sh\n' >> $HOOK_FILE
-	printf 'Depends = dash\n'
+	printf '[Trigger]\n' > $SHELL_HOOK_FILE
+	printf 'Type = Package\n' >> $SHELL_HOOK_FILE
+	printf 'Operation = Upgrade\n' >> $SHELL_HOOK_FILE
+	printf 'Target = bash\n\n' >> $SHELL_HOOK_FILE
+	printf '[Action]\n' >> $SHELL_HOOK_FILE
+	printf 'Description = Re-pointing /bin/sh to dash...\n' >> $SHELL_HOOK_FILE
+	printf 'When = PostTransaction\n' >> $SHELL_HOOK_FILE
+	printf 'Exec = /usr/bin/ln -sfT dash /usr/bin/sh\n' >> $SHELL_HOOK_FILE
+	printf 'Depends = dash\n' >> $SHELL_HOOK_FILE
 
 	sed -i "s/#$LOCALE/$LOCALE/" /etc/locale.gen
 
-	locale-gen
+	locale-gen >> /dev/null 2>&1
 
 	printf "LANG=$LOCALE\n" > /etc/locale.conf
 
 	printf "$HOSTNAME\n" > /etc/hostname
-
-	HOSTS_FILE='/etc/hosts'
 
 	printf '127.0.0.1\tlocalhost\n' > $HOSTS_FILE
 	printf '::1\t\tlocalhost\n' >> $HOSTS_FILE
@@ -280,7 +285,9 @@ then
 
 	useradd -m -G wheel "$USERNAME"
 
-	printf '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> /etc/sudoers
+	cp $SUDOERS_FILE /etc/default/sudoers
+
+	printf '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> $SUDOERS_FILE
 
 	printf "root:$PASSWORD\n" | chpasswd
 	printf "$USERNAME:$PASSWORD\n" | chpasswd
@@ -291,9 +298,9 @@ then
 	then
 		install_packages 'efibootmgr'
 
-		grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+		grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB >> /dev/null 2>&1
 	else
-		grub-install --target=i386-pc "/dev/$BIOS_DISK"
+		grub-install --target=i386-pc "/dev/$BIOS_DISK" >> /dev/null 2>&1
 	fi
 
 	if [ "$MICROCODE" != 'none' ]
@@ -301,7 +308,7 @@ then
 		install_packages "$MICROCODE"
 	fi
 
-	grub-mkconfig -o /boot/grub/grub.cfg
+	grub-mkconfig -o /boot/grub/grub.cfg >> /dev/null 2>&1
 
 	FIRMWARE_PACKAGES=''
 	DEPENDENCY_PACKAGES=''
@@ -347,9 +354,15 @@ then
 
 	sudo -u "$USERNAME" /install-script user
 
-	sed -i '$d' /etc/sudoers
+	cat << EOF > $SUDOERS_FILE
+# The default sudoers file is located in the /etc/default directory
+root ALL=(ALL:ALL) ALL
 
-	printf '%%wheel ALL=(ALL:ALL) ALL\n' >> /etc/sudoers
+%wheel ALL=(ALL:ALL) ALL
+
+@includedir /etc/sudoers.d
+EOF
+
 elif [ "$1" = 'user' ]
 then
 	rustup default stable >> /dev/null 2>&1
@@ -362,7 +375,7 @@ then
 
 	printf 'Installing Paru\n'
 
-	git clone https://aur.archlinux.org/paru.git >> /dev/null 2>&1
+	clone_repository 'https://aur.archlinux.org/paru.git'
 
 	cd paru
 
@@ -381,34 +394,24 @@ then
 
 	if [ "$TYPE" = 'dwm' ]
 	then
-		git clone https://github.com/l0py2/dwm >> /dev/null 2>&1
-
-		git clone https://github.com/l0py2/dmenu >> /dev/null 2>&1
-
-		git clone https://github.com/l0py2/dmenu-scripts >> /dev/null 2>&1
-
-		git clone https://github.com/l0py2/dwmblocks >> /dev/null 2>&1
+		clone_repository 'https://github.com/l0py2/dwm'
+		clone_repository 'https://github.com/l0py2/dmenu'
+		clone_repository 'https://github.com/l0py2/dmenu-scripts'
+		clone_repository 'https://github.com/l0py2/dwmblocks'
 
 		cd dwm
-
 		make >> /dev/null 2>&1
-
 		sudo make install >> /dev/null 2>&1
 
 		cd ../dmenu
-
 		make >> /dev/null 2>&1
-
 		sudo make install >> /dev/null 2>&1
 
 		cd ../dmenu-scripts
-
-		make >> /dev/null 2>&1
+		make install >> /dev/null 2>&1
 
 		cd ../dwmblocks
-
 		make >> /dev/null 2>&1
-
 		sudo make install >> /dev/null 2>&1
 	fi
 
