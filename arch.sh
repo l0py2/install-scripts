@@ -338,7 +338,7 @@ then
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
 		USER_PACKAGES='dunst feh kitty picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs'
-		UTIL_PACKAGES='man-db man-pages neovim texinfo'
+		UTIL_PACKAGES='man-db man-pages neovim texinfo acpi'
 	else
 		DEPENDENCY_PACKAGES='rustup'
 		SYSTEM_PACKAGES='base-devel git'
@@ -375,6 +375,16 @@ then
 	mkdir repositories
 
 	cd repositories
+
+	if [ "$TYPE" = 'hyprland' ]
+	then
+		clone_dotfiles 'dotfiles-hyprland'
+	elif [ "$TYPE" = 'dwm' ]
+	then
+		clone_dotfiles 'dotfiles-dwm'
+	else
+		clone_dotfiles 'dotfiles-base'
+	fi
 
 	printf 'Installing Paru\n'
 
@@ -416,16 +426,6 @@ then
 		cd ../dwmblocks
 		make >> /dev/null 2>&1
 		sudo make install >> /dev/null 2>&1
-	fi
-
-	if [ "$TYPE" = 'hyprland' ]
-	then
-		clone_dotfiles 'dotfiles-hyprland'
-	elif [ "$TYPE" = 'dwm' ]
-	then
-		clone_dotfiles 'dotfiles-dwm'
-	else
-		clone_dotfiles 'dotfiles-base'
 	fi
 
 	cd $HOME
