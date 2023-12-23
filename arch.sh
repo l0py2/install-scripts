@@ -6,10 +6,19 @@ SHELL_HOOK_FILE='/usr/share/libalpm/hooks/shell-relink.hook'
 HOSTS_FILE='/etc/hosts'
 SUDOERS_FILE='/etc/sudoers'
 
+FIRMWARE_PACKAGES=''
+DEPENDENCY_PACKAGES=''
+SYSTEM_PACKAGES=''
+FONT_PACKAGES=''
+AUDIO_PACKAGES=''
+USER_PACKAGES=''
+UTIL_PACKAGES=''
+AUR_PACKAGES=''
+
 enable_service() {
 	printf "Enabling: $1\n"
 
-	systemctl enable $1.service >> /dev/null 2>&1
+	systemctl enable $1.service >> /dev/null
 }
 
 install_packages() {
@@ -17,7 +26,7 @@ install_packages() {
 	then
 		printf "Installing: $1\n"
 
-		pacman -S --noconfirm $1 >> /dev/null 2>&1
+		pacman -S --noconfirm $1 >> /dev/null
 	fi
 }
 
@@ -26,24 +35,24 @@ install_packages_aur() {
 	then
 		printf "Installing: $1\n"
 
-		paru -S --noconfirm $1 >> /dev/null 2>&1
+		paru -S --noconfirm $1 >> /dev/null
 	fi
 }
 
 clone_repository() {
 	printf "Cloning: $1\n"
 
-	git clone $1 >> /dev/null 2>&1
+	git clone $1 >> /dev/null
 }
 
 clone_dotfiles() {
-	git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/$1 dotfiles >> /dev/null 2>&1
+	git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/$1 dotfiles >> /dev/null
 
 	rm dotfiles/.git
 
 	cp -r dotfiles/. $HOME
 
-	git --git-dir=$HOME/.dotfiles --work-tree=$HOME config status.showUntrackedFiles no >> /dev/null 2>&1
+	git --git-dir=$HOME/.dotfiles --work-tree=$HOME config status.showUntrackedFiles no >> /dev/null
 }
 
 whiptail_msgbox() {
@@ -165,7 +174,7 @@ then
 		'amd-ucode amd-ucode intel-ucode intel-ucode none none')
 
 	TYPE=$(whiptail_menu 'Type' 'Select the desired installation type' \
-		'base base hyprland hyprland dwm dwm')
+		'base base hyprland hyprland dwm dwm xfce xfce')
 
 	ADDITIONAL_PACKAGES=$(whiptail_inputbox 'Additional packages' \
 		'Write the names of additional packages separated by spaces')
@@ -196,9 +205,9 @@ then
 
 	printf 'Formatting and mounting partitions\n'
 
-	umount -R /mnt >> /dev/null 2>&1
+	umount -R /mnt >> /dev/null
 
-	mkfs.ext4 -F "/dev/$ROOT_PARTITION" >> /dev/null 2>&1
+	mkfs.ext4 -F "/dev/$ROOT_PARTITION" >> /dev/null
 
 	mount "/dev/$ROOT_PARTITION" /mnt
 
@@ -206,28 +215,28 @@ then
 	then
 		if [ $FORMAT_EFI_PARTITION -eq 1 ]
 		then
-			mkfs.fat -F 32 "/dev/$EFI_PARTITION" >> /dev/null 2>&1
+			mkfs.fat -F 32 "/dev/$EFI_PARTITION" >> /dev/null
 		fi
 
-		mount --mkdir "/dev/$EFI_PARTITION" /mnt/boot >> /dev/null 2>&1
+		mount --mkdir "/dev/$EFI_PARTITION" /mnt/boot >> /dev/null
 	fi
 
 	if [ "$SWAP_PARTITION" != 'none' ]
 	then
-		mkswap "/dev/$SWAP_PARTITION" >> /dev/null 2>&1
+		mkswap "/dev/$SWAP_PARTITION" >> /dev/null
 
-		swapon "/dev/$SWAP_PARTITION" >> /dev/null 2>&1
+		swapon "/dev/$SWAP_PARTITION" >> /dev/null
 	fi
 
 	printf 'Installing base system\n'
 
 	PACSTRAP_PACKAGES='base linux linux-firmware'
 
-	pacstrap -K /mnt $PACSTRAP_PACKAGES >> /dev/null 2>&1
+	pacstrap -K /mnt $PACSTRAP_PACKAGES >> /dev/null
 
-	genfstab -U /mnt >> /mnt/etc/fstab >> /dev/null 2>&1
+	genfstab -U /mnt >> /mnt/etc/fstab
 
-	localectl set-keymap "$KEYMAP" >> /dev/null 2>&1
+	localectl set-keymap "$KEYMAP" >> /dev/null
 
 	cp /etc/vconsole.conf /mnt/etc/vconsole.conf
 	mkdir -p /mnt/etc/X11/xorg.conf.d
@@ -270,7 +279,7 @@ then
 
 	sed -i "s/#$LOCALE/$LOCALE/" /etc/locale.gen
 
-	locale-gen >> /dev/null 2>&1
+	locale-gen >> /dev/null
 
 	printf "LANG=$LOCALE\n" > /etc/locale.conf
 
@@ -301,9 +310,9 @@ then
 	then
 		install_packages 'efibootmgr'
 
-		grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB >> /dev/null 2>&1
+		grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB >> /dev/null
 	else
-		grub-install --target=i386-pc "/dev/$BIOS_DISK" >> /dev/null 2>&1
+		grub-install --target=i386-pc "/dev/$BIOS_DISK" >> /dev/null
 	fi
 
 	if [ "$MICROCODE" != 'none' ]
@@ -311,38 +320,35 @@ then
 		install_packages "$MICROCODE"
 	fi
 
-	grub-mkconfig -o /boot/grub/grub.cfg >> /dev/null 2>&1
+	grub-mkconfig -o /boot/grub/grub.cfg >> /dev/null
 
-	FIRMWARE_PACKAGES=''
-	DEPENDENCY_PACKAGES=''
-	SYSTEM_PACKAGES=''
-	FONT_PACKAGES=''
-	AUDIO_PACKAGES=''
-	USER_PACKAGES=''
-	UTIL_PACKAGES=''
+	FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
+	DEPENDENCY_PACKAGES='rustup'
+	SYSTEM_PACKAGES='base-devel git openssh'
+	UTIL_PACKAGES='neovim'
 
 	if [ "$TYPE" = 'hyprland' ]
 	then
-		FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
-		DEPENDENCY_PACKAGES='qt5-wayland qt6-wayland gtk4 rustup'
-		SYSTEM_PACKAGES='base-devel git openssh starship'
+		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES qt5-wayland qt6-wayland gtk4"
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
-		USER_PACKAGES='dunst kitty polkit polkit-gnome swaybg thunar udisks2 waybar wofi xdg-desktop-portal-wlr xdg-user-dirs'
-		UTIL_PACKAGES='man-db man-pages neovim texinfo'
+		USER_PACKAGES='starship dunst kitty polkit polkit-gnome swaybg thunar udisks2 waybar wofi xdg-desktop-portal-wlr xdg-user-dirs'
+		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo"
 	elif [ "$TYPE" = 'dwm' ]
 	then
-		FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
-		DEPENDENCY_PACKAGES='gtk4 libx11 libxft libxinerama rustup'
-		SYSTEM_PACKAGES='base-devel git openssh starship xorg-server xorg-xinit'
+		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES gtk4 libx11 libxft libxinerama"
+		SYSTEM_PACKAGES="$STSTEM_PACKAGES xorg-server xorg-xinit"
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
-		USER_PACKAGES='dunst feh kitty picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs'
-		UTIL_PACKAGES='man-db man-pages neovim texinfo acpi'
-	else
-		DEPENDENCY_PACKAGES='rustup'
-		SYSTEM_PACKAGES='base-devel git'
-		UTIL_PACKAGES='neovim'
+		USER_PACKAGES='starship dunst feh kitty picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs'
+		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo acpi"
+	elif [ "$TYPE" = 'xfce' ]
+	then
+		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES gtk4"
+		SYSTEM_PACKAGES="$SYSTEM_PACKAGES lightdm lightdm-gtk-greeter xfce4 xfce4-goodies"
+		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
+		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
+		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo"
 	fi
 
 	install_packages "$FIRMWARE_PACKAGES"
@@ -354,6 +360,11 @@ then
 	install_packages "$UTIL_PACKAGES"
 
 	install_packages "$ADDITIONAL_PACKAGES"
+
+	if [ "$TYPE" = 'xfce' ]
+	then
+		enable_service 'lightdm'
+	fi
 
 	sudo -u "$USERNAME" /install-script user
 
@@ -368,8 +379,6 @@ EOF
 
 elif [ "$1" = 'user' ]
 then
-	rustup default stable >> /dev/null 2>&1
-
 	cd $HOME
 
 	mkdir repositories
@@ -386,21 +395,23 @@ then
 		clone_dotfiles 'dotfiles-base'
 	fi
 
+	rustup default stable >> /dev/null
+
 	printf 'Installing Paru\n'
 
 	clone_repository 'https://aur.archlinux.org/paru.git'
 
 	cd paru
 
-	makepkg -si --noconfirm >> /dev/null 2>&1
+	makepkg -si --noconfirm >> /dev/null
 
-	paru --gendb >> /dev/null 2>&1
+	paru --gendb >> /dev/null
 
 	cd ..
 
 	. /install-vars
 
-	if [ "$TYPE" = 'dwm' ] || [ "$TYPE" = 'hyprland' ] || [ "$TYPE" = 'gnome' ]
+	if [ "$TYPE" = 'dwm' ] || [ "$TYPE" = 'hyprland' ] || [ "$TYPE" = 'xfce' ]
 	then
 		xdg-user-dirs-update
 	fi
@@ -410,29 +421,31 @@ then
 		clone_repository 'https://github.com/l0py2/dwm'
 		clone_repository 'https://github.com/l0py2/dmenu'
 		clone_repository 'https://github.com/l0py2/dmenu-scripts'
+		clone_repository 'https://github.com/l0py2/scripts'
 		clone_repository 'https://github.com/l0py2/dwmblocks'
 
 		cd dwm
-		make >> /dev/null 2>&1
-		sudo make install >> /dev/null 2>&1
+		make >> /dev/null
+		sudo make install >> /dev/null
 
 		cd ../dmenu
-		make >> /dev/null 2>&1
-		sudo make install >> /dev/null 2>&1
+		make >> /dev/null
+		sudo make install >> /dev/null
 
 		cd ../dmenu-scripts
-		make install >> /dev/null 2>&1
+		make install >> /dev/null
+
+		cd ../scripts
+		make install >> /dev/null
 
 		cd ../dwmblocks
-		make >> /dev/null 2>&1
-		sudo make install >> /dev/null 2>&1
+		make >> /dev/null
+		sudo make install >> /dev/null
 	fi
 
 	cd $HOME
 
 	rm -rf repositories
-
-	AUR_PACKAGES=''
 
 	if [ "$TYPE" = 'hyprland' ]
 	then
