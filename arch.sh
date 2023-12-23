@@ -68,6 +68,11 @@ whiptail_menu() {
 		3>&1 1>&2 2>&3
 }
 
+whiptail_checklist() {
+	whiptail --title "$1" --nocancel --notags --checklist "$2" 0 0 0 $3 \
+		3>&1 1>&2 2>&3 | tr -d '"'
+}
+
 whiptail_inputbox() {
 	whiptail --title "$1" --nocancel --inputbox "$2" 0 0 3>&1 1>&2 2>&3
 }
@@ -169,6 +174,15 @@ then
 
 	USERNAME=$(whiptail_inputbox 'User' 'Write the desired user name')
 
+	KERNEL=''
+
+	while [ -z "$KERNEL" ]
+	do
+		KERNEL=$(whiptail_checklist 'Kernel' \
+			'Select at least one kernel' \
+			'linux linux on linux-zen linux-zen off')
+	done
+
 	MICROCODE=$(whiptail_menu 'Microcode' \
 		'Select the right microcode for your processor or none for none' \
 		'amd-ucode amd-ucode intel-ucode intel-ucode none none')
@@ -190,6 +204,7 @@ then
 	printf "TIMEZONE='$TIMEZONE'\n" >> $VARS_FILE
 	printf "HOSTNAME='$HOSTNAME'\n" >> $VARS_FILE
 	printf "USERNAME='$USERNAME'\n" >> $VARS_FILE
+	printf "KERNEL='$KERNEL'\n" >> $VARS_FILE
 	printf "MICROCODE='$MICROCODE'\n" >> $VARS_FILE
 	printf "TYPE='$TYPE'\n" >> $VARS_FILE
 	printf "ADDITIONAL_PACKAGES='$ADDITIONAL_PACKAGES'\n" >> $VARS_FILE
@@ -230,7 +245,7 @@ then
 
 	printf 'Installing base system\n'
 
-	PACSTRAP_PACKAGES='base linux linux-firmware'
+	PACSTRAP_PACKAGES="base $KERNEL linux-firmware"
 
 	pacstrap -K /mnt $PACSTRAP_PACKAGES >> /dev/null
 
@@ -348,6 +363,7 @@ then
 		SYSTEM_PACKAGES="$SYSTEM_PACKAGES lightdm lightdm-gtk-greeter xfce4 xfce4-goodies"
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
+		USER_PACKAGES='pavucontrol'
 		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo"
 	fi
 
