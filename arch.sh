@@ -352,26 +352,26 @@ then
 	elif [ "$TYPE" = 'dwm' ]
 	then
 		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES gtk4 libx11 libxft libxinerama"
-		SYSTEM_PACKAGES="$STSTEM_PACKAGES xorg-server xorg-xinit"
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
+		SYSTEM_PACKAGES="$STSTEM_PACKAGES xorg-server xorg-xinit"
 		USER_PACKAGES='starship dunst feh kitty picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs'
 		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo acpi"
 	elif [ "$TYPE" = 'xfce' ]
 	then
 		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES gtk4"
-		SYSTEM_PACKAGES="$SYSTEM_PACKAGES lightdm lightdm-gtk-greeter xfce4 xfce4-goodies"
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
-		USER_PACKAGES='pavucontrol'
+		SYSTEM_PACKAGES="$SYSTEM_PACKAGES lightdm lightdm-gtk-greeter xfce4 xfce4-goodies"
+		USER_PACKAGES='pavucontrol xdg-user-dirs'
 		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo"
 	fi
 
 	install_packages "$FIRMWARE_PACKAGES"
 	install_packages "$DEPENDENCY_PACKAGES"
-	install_packages "$SYSTEM_PACKAGES"
 	install_packages "$FONT_PACKAGES"
 	install_packages "$AUDIO_PACKAGES"
+	install_packages "$SYSTEM_PACKAGES"
 	install_packages "$USER_PACKAGES"
 	install_packages "$UTIL_PACKAGES"
 
