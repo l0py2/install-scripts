@@ -42,11 +42,11 @@ install_packages_aur() {
 clone_repository() {
 	printf "Cloning: $1\n"
 
-	git clone $1 >> /dev/null
+	git clone --depth=1 $1 >> /dev/null
 }
 
 clone_dotfiles() {
-	git clone --separate-git-dir=$HOME/.dotfiles https://github.com/l0py2/$1 dotfiles >> /dev/null
+	git clone --separate-git-dir=$HOME/.dotfiles --depth=1 https://github.com/l0py2/$1 dotfiles >> /dev/null
 
 	rm dotfiles/.git
 
@@ -351,11 +351,11 @@ then
 		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo"
 	elif [ "$TYPE" = 'dwm' ]
 	then
-		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES gtk4 libx11 libxft libxinerama"
+		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES libx11 libxft libxinerama"
 		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
 		SYSTEM_PACKAGES="$STSTEM_PACKAGES xorg-server xorg-xinit"
-		USER_PACKAGES='starship dunst feh kitty picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs'
+		USER_PACKAGES='starship dunst feh picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs'
 		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo acpi"
 	elif [ "$TYPE" = 'xfce' ]
 	then
@@ -439,6 +439,7 @@ then
 		clone_repository 'https://github.com/l0py2/dmenu-scripts'
 		clone_repository 'https://github.com/l0py2/scripts'
 		clone_repository 'https://github.com/l0py2/dwmblocks'
+		clone_repository 'https://github.com/l0py2/st'
 
 		cd dwm
 		make >> /dev/null
@@ -455,6 +456,10 @@ then
 		make install >> /dev/null
 
 		cd ../dwmblocks
+		make >> /dev/null
+		sudo make install >> /dev/null
+
+		cd ../st
 		make >> /dev/null
 		sudo make install >> /dev/null
 	fi
