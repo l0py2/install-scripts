@@ -216,54 +216,69 @@ then
 
 	PASSWORD=$(whiptail_inputbox 'User' 'Write the desired user password')
 
+	VERIFICATION_PASSWORD=$(whiptail inputbox 'User' 'Write the desired user password again to confirm')
+
+	while [ ! "$PASSWORD" = "$VERIFICATION_PASSWORD" ]
+	do
+		whiptail_msgbox 'User' 'Passwords do not match'
+
+		PASSWORD=$(whiptail_inputbox 'User' 'Write the desired user password')
+
+		VERIFICATION_PASSWORD=$(whiptail inputbox 'User' 'Write the desired user password again to confirm')
+	done
+
 	whiptail_msgbox 'User' 'The password will be used for root user too'
 
 	printf 'Formatting and mounting partitions\n'
 
-	umount -R /mnt >> /dev/null
+	{
+		umount -R /mnt
 
-	mkfs.ext4 -F "/dev/$ROOT_PARTITION" >> /dev/null
+		mkfs.ext4 -F "/dev/$ROOT_PARTITION"
 
-	mount "/dev/$ROOT_PARTITION" /mnt
+		mount "/dev/$ROOT_PARTITION" /mnt
 
-	if [ -z "$BIOS_DISK" ]
-	then
-		if [ $FORMAT_EFI_PARTITION -eq 1 ]
+		if [ -z "$BIOS_DISK" ]
 		then
-			mkfs.fat -F 32 "/dev/$EFI_PARTITION" >> /dev/null
+			if [ $FORMAT_EFI_PARTITION -eq 1 ]
+			then
+				mkfs.fat -F 32 "/dev/$EFI_PARTITION"
+			fi
+
+			mount --mkdir "/dev/$EFI_PARTITION" /mnt/boot
 		fi
 
-		mount --mkdir "/dev/$EFI_PARTITION" /mnt/boot >> /dev/null
-	fi
+		if [ "$SWAP_PARTITION" != 'none' ]
+		then
+			mkswap "/dev/$SWAP_PARTITION"
 
-	if [ "$SWAP_PARTITION" != 'none' ]
-	then
-		mkswap "/dev/$SWAP_PARTITION" >> /dev/null
-
-		swapon "/dev/$SWAP_PARTITION" >> /dev/null
-	fi
-
-	printf 'Installing base system\n'
+			swapon "/dev/$SWAP_PARTITION"
+		fi
+	} >> /dev/null
 
 	PACSTRAP_PACKAGES="base $KERNEL linux-firmware"
 
-	pacstrap -K /mnt $PACSTRAP_PACKAGES >> /dev/null
+	printf "Installing base system: $PACSTRAP_PACKAGES\n"
 
-	genfstab -U /mnt >> /mnt/etc/fstab
+	{
+		pacstrap -K /mnt $PACSTRAP_PACKAGES >> /dev/null
 
-	localectl set-keymap "$KEYMAP" >> /dev/null
+		genfstab -U /mnt >> /mnt/etc/fstab
 
-	cp /etc/vconsole.conf /mnt/etc/vconsole.conf
-	mkdir -p /mnt/etc/X11/xorg.conf.d
-	cp /etc/X11/xorg.conf.d/00-keyboard.conf /mnt/etc/X11/xorg.conf.d/00-keyboard.conf
+		localectl set-keymap "$KEYMAP" >> /dev/null
 
-	cp $0 /mnt/install-script
+		cp /etc/vconsole.conf /mnt/etc/vconsole.conf
+		mkdir -p /mnt/etc/X11/xorg.conf.d
+		cp /etc/X11/xorg.conf.d/00-keyboard.conf /mnt/etc/X11/xorg.conf.d/00-keyboard.conf
 
-	cp ./install-vars.sh /mnt/install-vars
+		cp $0 /mnt/install-script
 
-	chmod 777 /mnt/install-script /mnt/install-vars
+		cp ./install-vars.sh /mnt/install-vars
 
-	printf "PASSWORD='$PASSWORD'\n" >> /mnt/install-vars
+		chmod 777 /mnt/install-script /mnt/install-vars
+
+		printf "PASSWORD='$PASSWORD'\n" >> /mnt/install-vars
+	} >> /dev/null
 
 	arch-chroot /mnt /install-script root
 
@@ -274,35 +289,39 @@ elif [ "$1" = 'root' ]
 then
 	. /install-vars
 
-	ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+	{
+		ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 
-	hwclock --systohc
+		hwclock --systohc
+	} >> /dev/null
 
 	install_packages 'dash'
 
-	ln -sfT dash /usr/bin/sh
+	{
+		ln -sfT dash /usr/bin/sh
 
-	printf '[Trigger]\n' > $SHELL_HOOK_FILE
-	printf 'Type = Package\n' >> $SHELL_HOOK_FILE
-	printf 'Operation = Upgrade\n' >> $SHELL_HOOK_FILE
-	printf 'Target = bash\n\n' >> $SHELL_HOOK_FILE
-	printf '[Action]\n' >> $SHELL_HOOK_FILE
-	printf 'Description = Re-pointing /bin/sh to dash...\n' >> $SHELL_HOOK_FILE
-	printf 'When = PostTransaction\n' >> $SHELL_HOOK_FILE
-	printf 'Exec = /usr/bin/ln -sfT dash /usr/bin/sh\n' >> $SHELL_HOOK_FILE
-	printf 'Depends = dash\n' >> $SHELL_HOOK_FILE
+		printf '[Trigger]\n' > $SHELL_HOOK_FILE
+		printf 'Type = Package\n' >> $SHELL_HOOK_FILE
+		printf 'Operation = Upgrade\n' >> $SHELL_HOOK_FILE
+		printf 'Target = bash\n\n' >> $SHELL_HOOK_FILE
+		printf '[Action]\n' >> $SHELL_HOOK_FILE
+		printf 'Description = Re-pointing /bin/sh to dash...\n' >> $SHELL_HOOK_FILE
+		printf 'When = PostTransaction\n' >> $SHELL_HOOK_FILE
+		printf 'Exec = /usr/bin/ln -sfT dash /usr/bin/sh\n' >> $SHELL_HOOK_FILE
+		printf 'Depends = dash\n' >> $SHELL_HOOK_FILE
 
-	sed -i "s/#$LOCALE/$LOCALE/" /etc/locale.gen
+		sed -i "s/#$LOCALE/$LOCALE/" /etc/locale.gen
 
-	locale-gen >> /dev/null
+		locale-gen >> /dev/null
 
-	printf "LANG=$LOCALE\n" > /etc/locale.conf
+		printf "LANG=$LOCALE\n" > /etc/locale.conf
 
-	printf "$HOSTNAME\n" > /etc/hostname
+		printf "$HOSTNAME\n" > /etc/hostname
 
-	printf '127.0.0.1\tlocalhost\n' > $HOSTS_FILE
-	printf '::1\t\tlocalhost\n' >> $HOSTS_FILE
-	printf "127.0.1.1\t$HOSTNAME\n" >> $HOSTS_FILE
+		printf '127.0.0.1\tlocalhost\n' > $HOSTS_FILE
+		printf '::1\t\tlocalhost\n' >> $HOSTS_FILE
+		printf "127.0.1.1\t$HOSTNAME\n" >> $HOSTS_FILE
+	} >> /dev/null
 
 	install_packages 'networkmanager'
 
@@ -310,14 +329,16 @@ then
 
 	install_packages 'sudo'
 
-	useradd -m -G wheel "$USERNAME"
+	{
+		useradd -m -G wheel "$USERNAME"
 
-	cp $SUDOERS_FILE /etc/default/sudoers
+		cp $SUDOERS_FILE /etc/default/sudoers
 
-	printf '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> $SUDOERS_FILE
+		printf '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> $SUDOERS_FILE
 
-	printf "root:$PASSWORD\n" | chpasswd
-	printf "$USERNAME:$PASSWORD\n" | chpasswd
+		printf "root:$PASSWORD\n" | chpasswd
+		printf "$USERNAME:$PASSWORD\n" | chpasswd
+	} >> /dev/null
 
 	install_packages 'grub'
 
@@ -359,11 +380,10 @@ then
 		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo acpi"
 	elif [ "$TYPE" = 'xfce' ]
 	then
-		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES gtk4"
-		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
+		FONT_PACKAGES='noto-fonts noto-fonts-cjk noto-fonts-emoji'
 		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
 		SYSTEM_PACKAGES="$SYSTEM_PACKAGES lightdm lightdm-gtk-greeter xfce4 xfce4-goodies"
-		USER_PACKAGES='pavucontrol xdg-user-dirs'
+		USER_PACKAGES='pavucontrol'
 		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo"
 	fi
 
@@ -419,15 +439,17 @@ then
 
 	cd paru
 
-	makepkg -si --noconfirm >> /dev/null
+	{
+		makepkg -si --noconfirm
 
-	paru --gendb >> /dev/null
+		paru --gendb
+	} >> /dev/null
 
 	cd ..
 
 	. /install-vars
 
-	if [ "$TYPE" = 'dwm' ] || [ "$TYPE" = 'hyprland' ] || [ "$TYPE" = 'xfce' ]
+	if [ "$TYPE" = 'dwm' ] || [ "$TYPE" = 'hyprland' ]
 	then
 		xdg-user-dirs-update
 	fi
@@ -440,28 +462,35 @@ then
 		clone_repository 'https://github.com/l0py2/scripts'
 		clone_repository 'https://github.com/l0py2/dwmblocks'
 		clone_repository 'https://github.com/l0py2/st'
+		clone_repository 'https://github.com/l0py2/slock'
 
-		cd dwm
-		make >> /dev/null
-		sudo make install >> /dev/null
+		{
+			cd dwm
+			make
+			sudo make install
 
-		cd ../dmenu
-		make >> /dev/null
-		sudo make install >> /dev/null
+			cd ../dmenu
+			make
+			sudo make install
 
-		cd ../dmenu-scripts
-		make install >> /dev/null
+			cd ../dmenu-scripts
+			make install
 
-		cd ../scripts
-		make install >> /dev/null
+			cd ../scripts
+			make install
 
-		cd ../dwmblocks
-		make >> /dev/null
-		sudo make install >> /dev/null
+			cd ../dwmblocks
+			make
+			sudo make install
 
-		cd ../st
-		make >> /dev/null
-		sudo make install >> /dev/null
+			cd ../st
+			make
+			sudo make install
+
+			cd ../slock
+			make
+			sudo make install
+		} >> /dev/null
 	fi
 
 	cd $HOME
