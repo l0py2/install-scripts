@@ -1,58 +1,94 @@
 #!/bin/sh
 
-VARS_FILE='install-vars.sh'
-
-SHELL_HOOK_FILE='/usr/share/libalpm/hooks/shell-relink.hook'
-HOSTS_FILE='/etc/hosts'
-SUDOERS_FILE='/etc/sudoers'
-
-FIRMWARE_PACKAGES=''
-DEPENDENCY_PACKAGES=''
-SYSTEM_PACKAGES=''
-FONT_PACKAGES=''
-AUDIO_PACKAGES=''
-USER_PACKAGES=''
-UTIL_PACKAGES=''
-AUR_PACKAGES=''
-
 enable_service() {
 	printf "Enabling: $1\n"
 
-	systemctl enable $1.service >> /dev/null
+	systemctl enable "$1.service" >> /dev/null
 }
 
 install_packages() {
 	if [ -n "$1" ]
 	then
-		printf "Installing: $1\n"
+		printf "Installing packages: $1\n"
 
 		pacman -S --noconfirm $1 >> /dev/null
 	fi
 }
 
-install_packages_aur() {
+clone_dotfiles() {
+	printf "Cloning dotfiles: $1"
+
+	{
+		mkdir -p "$HOME/repositories"
+
+		cd "$HOME/repositories"
+
+		git clone --separate-git-dir="$HOME/.dotfiles" --depth=1 "https://github.com/l0py2/$1" dotfiles
+
+		rm dotfiles/.git
+
+		cp -r dotfiles/. "$HOME"
+
+		git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" config status.showUntrackedFiles no
+	} >> /dev/null
+}
+
+make_aur_packages() {
 	if [ -n "$1" ]
 	then
-		printf "Installing: $1\n"
+		printf "Making packages from the AUR: $1\n"
 
-		paru -S --noconfirm $1 >> /dev/null
+		{
+			mkdir -p "$HOME/repositories"
+
+			cd "$HOME/repositories"
+
+			for PACKAGE in $1
+			do
+				git clone --depth=1 "https://aur.archlinux.org/$PACKAGE.git" "$PACKAGE"
+
+				cd "$PACKAGE"
+
+				makepkg -si --noconfirm
+
+				cd ..
+			done
+		} >> /dev/null
 	fi
 }
 
-clone_repository() {
-	printf "Cloning: $1\n"
+make_repository() {
+	printf "Making repository: $1\n"
 
-	git clone --depth=1 $1 >> /dev/null
+	{
+		mkdir -p "$HOME/repositories"
+
+		cd "$HOME/repositories"
+
+		git clone --depth=1 "$2" "$1"
+
+		cd "$1"
+
+		make
+		make install
+	} >> /dev/null
 }
 
-clone_dotfiles() {
-	git clone --separate-git-dir=$HOME/.dotfiles --depth=1 https://github.com/l0py2/$1 dotfiles >> /dev/null
+sudo_make_repository() {
+	printf "Making repository: $1\n"
 
-	rm dotfiles/.git
+	{
+		mkdir -p "$HOME/repositories"
 
-	cp -r dotfiles/. $HOME
+		cd "$HOME/repositories"
 
-	git --git-dir=$HOME/.dotfiles --work-tree=$HOME config status.showUntrackedFiles no >> /dev/null
+		git clone --depth=1 "$2" "$1"
+
+		cd "$1"
+
+		make
+		sudo make install
+	} >> /dev/null
 }
 
 whiptail_msgbox() {
@@ -193,6 +229,10 @@ then
 	ADDITIONAL_PACKAGES=$(whiptail_inputbox 'Additional packages' \
 		'Write the names of additional packages separated by spaces')
 
+	whiptail_yesno 'Additional packages' 'Install Arch User Repository (AUR) helper'
+	INSTALL_AUR_HELPER=$?
+
+	VARS_FILE='install-vars.sh'
 	printf '#!/bin/sh\n' > $VARS_FILE
 	printf "KEYMAP='$KEYMAP'\n" >> $VARS_FILE
 	printf "BIOS_DISK='$BIOS_DISK'\n" >> $VARS_FILE
@@ -208,6 +248,7 @@ then
 	printf "MICROCODE='$MICROCODE'\n" >> $VARS_FILE
 	printf "TYPE='$TYPE'\n" >> $VARS_FILE
 	printf "ADDITIONAL_PACKAGES='$ADDITIONAL_PACKAGES'\n" >> $VARS_FILE
+	printf "INSTALL_AUR_HELPER='$INSTALL_AUR_HELPER'\n" >> $VARS_FILE
 elif [ "$1" = '--install' ]
 then
 	. ./install-vars.sh
@@ -261,11 +302,11 @@ then
 	printf "Installing base system: $PACSTRAP_PACKAGES\n"
 
 	{
-		pacstrap -K /mnt $PACSTRAP_PACKAGES >> /dev/null
+		pacstrap -K /mnt $PACSTRAP_PACKAGES
 
 		genfstab -U /mnt >> /mnt/etc/fstab
 
-		localectl set-keymap "$KEYMAP" >> /dev/null
+		localectl set-keymap "$KEYMAP"
 
 		cp /etc/vconsole.conf /mnt/etc/vconsole.conf
 		mkdir -p /mnt/etc/X11/xorg.conf.d
@@ -282,7 +323,7 @@ then
 
 	arch-chroot /mnt /install-script root
 
-	rm /mnt/install-script /mnt/install-vars
+	rm -rf /mnt/install-script /mnt/install-vars
 
 	printf 'The installation is complete\n'
 elif [ "$1" = 'root' ]
@@ -300,6 +341,7 @@ then
 	{
 		ln -sfT dash /usr/bin/sh
 
+		SHELL_HOOK_FILE='/usr/share/libalpm/hooks/shell-relink.hook'
 		printf '[Trigger]\n' > $SHELL_HOOK_FILE
 		printf 'Type = Package\n' >> $SHELL_HOOK_FILE
 		printf 'Operation = Upgrade\n' >> $SHELL_HOOK_FILE
@@ -312,12 +354,13 @@ then
 
 		sed -i "s/#$LOCALE/$LOCALE/" /etc/locale.gen
 
-		locale-gen >> /dev/null
+		locale-gen
 
 		printf "LANG=$LOCALE\n" > /etc/locale.conf
 
 		printf "$HOSTNAME\n" > /etc/hostname
 
+		HOSTS_FILE='/etc/hosts'
 		printf '127.0.0.1\tlocalhost\n' > $HOSTS_FILE
 		printf '::1\t\tlocalhost\n' >> $HOSTS_FILE
 		printf "127.0.1.1\t$HOSTNAME\n" >> $HOSTS_FILE
@@ -328,6 +371,8 @@ then
 	enable_service 'NetworkManager'
 
 	install_packages 'sudo'
+
+	SUDOERS_FILE='/etc/sudoers'
 
 	{
 		useradd -m -G wheel "$USERNAME"
@@ -360,30 +405,33 @@ then
 
 	FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
 	DEPENDENCY_PACKAGES='rustup'
+	FONT_PACKAGES='noto-fonts noto-fonts-cjk'
+	AUDIO_PACKAGES=''
 	SYSTEM_PACKAGES='base-devel git openssh'
-	UTIL_PACKAGES='neovim'
+	USER_PACKAGES=''
+	UTIL_PACKAGES='man-db man-pages texinfo'
 
 	if [ "$TYPE" = 'hyprland' ]
 	then
 		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES qt5-wayland qt6-wayland gtk4"
-		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
-		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
-		USER_PACKAGES='starship dunst kitty polkit polkit-gnome swaybg thunar udisks2 waybar wofi xdg-desktop-portal-wlr xdg-user-dirs'
-		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo"
+		FONT_PACKAGES="$FONT_PACKAGES noto-fonts-emoji ttf-nerd-fonts-symbols"
+		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber pavucontrol"
+		USER_PACKAGES="$USER_PACKAGES starship dunst kitty polkit polkit-gnome swaybg thunar udisks2 waybar wofi xdg-desktop-portal-wlr xdg-user-dirs"
+		UTIL_PACKAGES="$UTIL_PACKAGES neovim"
 	elif [ "$TYPE" = 'dwm' ]
 	then
 		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES libx11 libxft libxinerama"
-		FONT_PACKAGES='ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji'
-		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
+		FONT_PACKAGES="$FONT_PACKAGES noto-fonts-emoji ttf-nerd-fonts-symbols"
+		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber pavucontrol"
 		SYSTEM_PACKAGES="$STSTEM_PACKAGES xorg-server xorg-xinit"
-		USER_PACKAGES='starship dunst feh picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs'
-		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo acpi"
+		USER_PACKAGES="$USER_PACKAGES starship dunst feh picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs"
+		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo acpi rclone"
 	elif [ "$TYPE" = 'xfce' ]
 	then
-		FONT_PACKAGES='noto-fonts noto-fonts-cjk noto-fonts-emoji'
-		AUDIO_PACKAGES='pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber'
+		FONT_PACKAGES="$FONT_PACKAGES noto-fonts-emoji"
+		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber"
 		SYSTEM_PACKAGES="$SYSTEM_PACKAGES lightdm lightdm-gtk-greeter xfce4 xfce4-goodies"
-		USER_PACKAGES='pavucontrol'
+		USER_PACKAGES="$USER_PACKAGES pavucontrol"
 		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo"
 	fi
 
@@ -394,7 +442,6 @@ then
 	install_packages "$SYSTEM_PACKAGES"
 	install_packages "$USER_PACKAGES"
 	install_packages "$UTIL_PACKAGES"
-
 	install_packages "$ADDITIONAL_PACKAGES"
 
 	if [ "$TYPE" = 'xfce' ]
@@ -412,15 +459,8 @@ root ALL=(ALL:ALL) ALL
 
 @includedir /etc/sudoers.d
 EOF
-
 elif [ "$1" = 'user' ]
 then
-	cd $HOME
-
-	mkdir repositories
-
-	cd repositories
-
 	if [ "$TYPE" = 'hyprland' ]
 	then
 		clone_dotfiles 'dotfiles-hyprland'
@@ -433,21 +473,14 @@ then
 
 	rustup default stable >> /dev/null
 
-	printf 'Installing Paru\n'
-
-	clone_repository 'https://aur.archlinux.org/paru.git'
-
-	cd paru
-
-	{
-		makepkg -si --noconfirm
-
-		paru --gendb
-	} >> /dev/null
-
-	cd ..
-
 	. /install-vars
+
+	if [ "$INSTALL_AUR_HELPER" -eq 0 ]
+	then
+		make_aur_packages 'paru'
+
+		paru --gendb >> /dev/null
+	fi
 
 	if [ "$TYPE" = 'dwm' ] || [ "$TYPE" = 'hyprland' ]
 	then
@@ -456,53 +489,26 @@ then
 
 	if [ "$TYPE" = 'dwm' ]
 	then
-		clone_repository 'https://github.com/l0py2/dwm'
-		clone_repository 'https://github.com/l0py2/dmenu'
-		clone_repository 'https://github.com/l0py2/dmenu-scripts'
-		clone_repository 'https://github.com/l0py2/scripts'
-		clone_repository 'https://github.com/l0py2/dwmblocks'
-		clone_repository 'https://github.com/l0py2/st'
-		clone_repository 'https://github.com/l0py2/slock'
+		make_repository 'dmenu-scripts' 'https://github.com/l0py2/dmenu-scripts'
+		make_repository 'scripts' 'https://github.com/l0py2/scripts'
 
-		{
-			cd dwm
-			make
-			sudo make install
-
-			cd ../dmenu
-			make
-			sudo make install
-
-			cd ../dmenu-scripts
-			make install
-
-			cd ../scripts
-			make install
-
-			cd ../dwmblocks
-			make
-			sudo make install
-
-			cd ../st
-			make
-			sudo make install
-
-			cd ../slock
-			make
-			sudo make install
-		} >> /dev/null
+		sudo_make_repository 'dwm' 'https://github.com/l0py2/dwm'
+		sudo_make_repository 'dmenu' 'https://github.com/l0py2/dmenu'
+		sudo_make_repository 'dwmblocks' 'https://github.com/l0py2/dwmblocks'
+		sudo_make_repository 'st' 'https://github.com/l0py2/st'
+		sudo_make_repository 'slock' 'https://github.com/l0py2/slock'
 	fi
 
-	cd $HOME
-
-	rm -rf repositories
+	AUR_PACKAGES=''
 
 	if [ "$TYPE" = 'hyprland' ]
 	then
-		AUR_PACKAGES='hyprland-git'
+		AUR_PACKAGES="$AUR_PACKAGES hyprland-git"
 	fi
 
-	install_packages_aur "$AUR_PACKAGES"
+	make_aur_packages "$AUR_PACKAGES"
+
+	rm -rf "$HOME/repositories"
 else
 	printf 'Use --help to get help\n'
 fi
