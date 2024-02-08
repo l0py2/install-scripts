@@ -113,6 +113,10 @@ whiptail_inputbox() {
 	whiptail --title "$1" --nocancel --inputbox "$2" 0 0 3>&1 1>&2 2>&3
 }
 
+whiptail_passwordbox() {
+	whiptail --title "$1" --nocancel --passwordbox "$2" 0 0 3>&1 1>&2 2>&3
+}
+
 if [ ! $1 ] || [ "$1" = '--help' ]
 then
 	printf 'Automated Arch Linux install script quick guide\n\n'
@@ -255,17 +259,17 @@ then
 
 	loadkeys "$KEYMAP"
 
-	PASSWORD=$(whiptail_inputbox 'User' 'Write the desired user password')
+	PASSWORD=$(whiptail_passwordbox 'User' 'Write the desired user password')
 
-	VERIFICATION_PASSWORD=$(whiptail inputbox 'User' 'Write the desired user password again to confirm')
+	VERIFICATION_PASSWORD=$(whiptail_passwordbox 'User' 'Write the desired user password again to confirm')
 
 	while [ ! "$PASSWORD" = "$VERIFICATION_PASSWORD" ]
 	do
 		whiptail_msgbox 'User' 'Passwords do not match'
 
-		PASSWORD=$(whiptail_inputbox 'User' 'Write the desired user password')
+		PASSWORD=$(whiptail_passwordbox 'User' 'Write the desired user password')
 
-		VERIFICATION_PASSWORD=$(whiptail inputbox 'User' 'Write the desired user password again to confirm')
+		VERIFICATION_PASSWORD=$(whiptail_passwordbox 'User' 'Write the desired user password again to confirm')
 	done
 
 	whiptail_msgbox 'User' 'The password will be used for root user too'
@@ -425,14 +429,13 @@ then
 		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber pavucontrol"
 		SYSTEM_PACKAGES="$STSTEM_PACKAGES xorg-server xorg-xinit"
 		USER_PACKAGES="$USER_PACKAGES starship dunst feh picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs"
-		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo acpi rclone"
+		UTIL_PACKAGES="$UTIL_PACKAGES acpi rclone"
 	elif [ "$TYPE" = 'xfce' ]
 	then
 		FONT_PACKAGES="$FONT_PACKAGES noto-fonts-emoji"
 		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber"
 		SYSTEM_PACKAGES="$SYSTEM_PACKAGES lightdm lightdm-gtk-greeter xfce4 xfce4-goodies"
 		USER_PACKAGES="$USER_PACKAGES pavucontrol"
-		UTIL_PACKAGES="$UTIL_PACKAGES man-db man-pages texinfo"
 	fi
 
 	install_packages "$FIRMWARE_PACKAGES"
