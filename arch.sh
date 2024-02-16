@@ -381,7 +381,8 @@ then
 	{
 		useradd -m -G wheel "$USERNAME"
 
-		cp $SUDOERS_FILE /etc/default/sudoers
+		mkdir -p /root/original-default
+		cp $SUDOERS_FILE /root/original-default
 
 		printf '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> $SUDOERS_FILE
 
@@ -420,22 +421,23 @@ then
 		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES qt5-wayland qt6-wayland gtk4"
 		FONT_PACKAGES="$FONT_PACKAGES noto-fonts-emoji ttf-nerd-fonts-symbols"
 		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber pavucontrol"
-		USER_PACKAGES="$USER_PACKAGES starship dunst kitty polkit polkit-gnome swaybg thunar udisks2 waybar wofi xdg-desktop-portal-wlr xdg-user-dirs"
+		SYSTEM_PACKAGES="$SYSTEM_PACKAGES polkit polkit-gnome xdg-desktop-portal-wlr xdg-user-dirs"
+		USER_PACKAGES="$USER_PACKAGES starship dunst kitty swaybg thunar udisks2 waybar wofi"
 		UTIL_PACKAGES="$UTIL_PACKAGES neovim"
 	elif [ "$TYPE" = 'dwm' ]
 	then
 		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES libx11 libxft libxinerama"
 		FONT_PACKAGES="$FONT_PACKAGES noto-fonts-emoji ttf-nerd-fonts-symbols"
 		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber pavucontrol"
-		SYSTEM_PACKAGES="$STSTEM_PACKAGES xorg-server xorg-xinit"
-		USER_PACKAGES="$USER_PACKAGES starship dunst feh picom polkit polkit-gnome thunar udisks2 xdg-desktop-portal-gtk xdg-user-dirs"
-		UTIL_PACKAGES="$UTIL_PACKAGES acpi rclone"
+		SYSTEM_PACKAGES="$SYSTEM_PACKAGES polkit polkit-gnome xdg-desktop-portal-gtk xdg-user-dirs xorg-server xorg-xinit xss-lock"
+		USER_PACKAGES="$USER_PACKAGES starship dunst feh picom thunar thunar-archive-plugin udisks2 xarchiver"
+		UTIL_PACKAGES="$UTIL_PACKAGES acpi neovim rclone"
 	elif [ "$TYPE" = 'xfce' ]
 	then
 		FONT_PACKAGES="$FONT_PACKAGES noto-fonts-emoji"
 		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber"
 		SYSTEM_PACKAGES="$SYSTEM_PACKAGES lightdm lightdm-gtk-greeter xfce4 xfce4-goodies"
-		USER_PACKAGES="$USER_PACKAGES pavucontrol"
+		USER_PACKAGES="$USER_PACKAGES pavucontrol xarchiver"
 	fi
 
 	install_packages "$FIRMWARE_PACKAGES"
