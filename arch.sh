@@ -1,9 +1,13 @@
 #!/bin/sh
 
+installation_temp='/installation'
+installation_log="$installation_temp/installation_log.txt"
+installation_final='/root/installation'
+
 enable_service() {
 	printf "Enabling: $1\n"
 
-	systemctl enable "$1.service" >> /dev/null
+	systemctl enable "$1.service" >> "$installation_log" 2>&1
 }
 
 install_packages() {
@@ -11,7 +15,7 @@ install_packages() {
 	then
 		printf "Installing packages: $1\n"
 
-		pacman -S --noconfirm $1 >> /dev/null
+		pacman -S --noconfirm $1 >> "$installation_log" 2>&1
 	fi
 }
 
@@ -30,7 +34,7 @@ clone_dotfiles() {
 		cp -r dotfiles/. "$HOME"
 
 		git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" config status.showUntrackedFiles no
-	} >> /dev/null
+	} >> "$installation_log" 2>&1
 }
 
 make_aur_packages() {
@@ -53,7 +57,7 @@ make_aur_packages() {
 
 				cd ..
 			done
-		} >> /dev/null
+		} >> "$installation_log" 2>&1
 	fi
 }
 
@@ -71,7 +75,7 @@ make_repository() {
 
 		make
 		make install
-	} >> /dev/null
+	} >> "$installation_log" 2>&1
 }
 
 sudo_make_repository() {
@@ -88,7 +92,7 @@ sudo_make_repository() {
 
 		make
 		sudo make install
-	} >> /dev/null
+	} >> "$installation_log" 2>&1
 }
 
 whiptail_msgbox() {
@@ -299,7 +303,7 @@ then
 
 			swapon "/dev/$SWAP_PARTITION"
 		fi
-	} >> /dev/null
+	} >> /dev/null 2>&1
 
 	PACSTRAP_PACKAGES="base $KERNEL linux-firmware"
 
@@ -323,7 +327,7 @@ then
 		chmod 777 /mnt/install-script /mnt/install-vars
 
 		printf "PASSWORD='$PASSWORD'\n" >> /mnt/install-vars
-	} >> /dev/null
+	} >> /dev/null 2>&1
 
 	arch-chroot /mnt /install-script root
 
@@ -334,11 +338,16 @@ elif [ "$1" = 'root' ]
 then
 	. /install-vars
 
+	mkdir -p "$installation_temp"
+	touch "$installation_log"
+	chmod 777 "$installation_temp"
+	chmod 666 "$installation_log"
+
 	{
 		ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 
 		hwclock --systohc
-	} >> /dev/null
+	} >> "$installation_log" 2>&1
 
 	install_packages 'dash'
 
@@ -368,7 +377,7 @@ then
 		printf '127.0.0.1\tlocalhost\n' > $HOSTS_FILE
 		printf '::1\t\tlocalhost\n' >> $HOSTS_FILE
 		printf "127.0.1.1\t$HOSTNAME\n" >> $HOSTS_FILE
-	} >> /dev/null
+	} >> "$installation_log" 2>&1
 
 	install_packages 'networkmanager'
 
@@ -388,7 +397,7 @@ then
 
 		printf "root:$PASSWORD\n" | chpasswd
 		printf "$USERNAME:$PASSWORD\n" | chpasswd
-	} >> /dev/null
+	} >> "$installation_log" 2>&1
 
 	install_packages 'grub'
 
@@ -396,9 +405,9 @@ then
 	then
 		install_packages 'efibootmgr'
 
-		grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB >> /dev/null
+		grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB >> "$installation_log" 2>&1
 	else
-		grub-install --target=i386-pc "/dev/$BIOS_DISK" >> /dev/null
+		grub-install --target=i386-pc "/dev/$BIOS_DISK" >> "$installation_log" 2>&1
 	fi
 
 	if [ "$MICROCODE" != 'none' ]
@@ -406,7 +415,7 @@ then
 		install_packages "$MICROCODE"
 	fi
 
-	grub-mkconfig -o /boot/grub/grub.cfg >> /dev/null
+	grub-mkconfig -o /boot/grub/grub.cfg >> "$installation_log" 2>&1
 
 	FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
 	DEPENDENCY_PACKAGES='rustup'
@@ -464,6 +473,8 @@ root ALL=(ALL:ALL) ALL
 
 @includedir /etc/sudoers.d
 EOF
+
+	cp -r "$installation_temp"/. "$installation_final"
 elif [ "$1" = 'user' ]
 then
 	if [ "$TYPE" = 'hyprland' ]
@@ -476,7 +487,7 @@ then
 		clone_dotfiles 'dotfiles-base'
 	fi
 
-	rustup default stable >> /dev/null
+	rustup default stable >> "$installation_log" 2>&1
 
 	. /install-vars
 
@@ -484,12 +495,12 @@ then
 	then
 		make_aur_packages 'paru'
 
-		paru --gendb >> /dev/null
+		paru --gendb >> "$installation_log" 2>&1
 	fi
 
 	if [ "$TYPE" = 'dwm' ] || [ "$TYPE" = 'hyprland' ]
 	then
-		xdg-user-dirs-update
+		xdg-user-dirs-update >> "$installation_log" 2>&1
 	fi
 
 	if [ "$TYPE" = 'dwm' ]
