@@ -29,7 +29,7 @@ install_packages() {
 }
 
 clone_dotfiles() {
-	printf "Cloning dotfiles: $1"
+	printf "Cloning dotfiles: $1\n"
 
 	{
 		mkdir -p "$HOME/repositories"
@@ -382,9 +382,11 @@ then
 		printf "$HOSTNAME\n" > /etc/hostname
 
 		HOSTS_FILE='/etc/hosts'
-		printf '127.0.0.1\tlocalhost\n' > $HOSTS_FILE
-		printf '::1\t\tlocalhost\n' >> $HOSTS_FILE
-		printf "127.0.1.1\t$HOSTNAME\n" >> $HOSTS_FILE
+		cat << EOF > $HOSTS_FILE
+127.0.0.1	localhost
+::1		localhost
+127.0.1.1	$HOSTNAME
+EOF
 	} >> "$installation_log" 2>&1
 
 	install_packages 'networkmanager'
@@ -423,6 +425,8 @@ then
 	fi
 
 	grub-mkconfig -o /boot/grub/grub.cfg >> "$installation_log" 2>&1
+
+	sudo -u "$USERNAME" "$installation_script_location" dotfiles
 
 	FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
 	DEPENDENCY_PACKAGES='rustup'
@@ -483,7 +487,7 @@ EOF
 
 	cp -r "$installation_temp/." "$installation_final"
 	rm -rf "$installation_temp"
-elif [ "$1" = 'user' ]
+elif [ "$1" = 'dotfiles' ]
 then
 	. "$installation_vars_location"
 
@@ -496,6 +500,9 @@ then
 	else
 		clone_dotfiles 'dotfiles-base'
 	fi
+elif [ "$1" = 'user' ]
+then
+	. "$installation_vars_location"
 
 	rustup default stable >> "$installation_log" 2>&1
 
