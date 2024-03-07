@@ -11,6 +11,8 @@ installation_script_location="$installation_temp/install-script"
 installation_vars_location="$installation_temp/install-vars"
 installation_final='/root/installation'
 
+original_default='/root/original-default'
+
 enable_service() {
 	printf "Enabling: $1\n"
 
@@ -330,12 +332,13 @@ then
 		cp /etc/X11/xorg.conf.d/00-keyboard.conf /mnt/etc/X11/xorg.conf.d/00-keyboard.conf
 
 		mkdir -p "/mnt$installation_temp"
+		mkdir -p "/mnt$original_default"
 
 		cp $0 "/mnt$installation_script_location"
 		cp ./install-vars.sh "/mnt$installation_vars_location"
 		cp "$pre_installation_log" "/mnt$installation_log"
 
-		chmod 777 "/mnt$installation_temp" "/mnt$installation_script_location" "/mnt$installation_vars_location"
+		chmod 777 "/mnt$installation_temp" "/mnt$original_default" "/mnt$installation_script_location" "/mnt$installation_vars_location"
 		chmod 666 "/mnt$installation_log"
 
 		printf "PASSWORD='$PASSWORD'\n" >> "/mnt$installation_vars_location"
@@ -346,7 +349,7 @@ then
 	printf 'The installation is complete\n'
 elif [ "$1" = 'root' ]
 then
-	. /install-vars
+	. "$installation_vars_location"
 
 	{
 		ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
@@ -395,8 +398,7 @@ then
 	{
 		useradd -m -G wheel "$USERNAME"
 
-		mkdir -p /root/original-default
-		cp $SUDOERS_FILE /root/original-default
+		cp $SUDOERS_FILE "$original_default"
 
 		printf '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> $SUDOERS_FILE
 
@@ -468,10 +470,10 @@ then
 		enable_service 'lightdm'
 	fi
 
-	sudo -u "$USERNAME" /install-script user
+	sudo -u "$USERNAME" "$installation_script_location" user
 
 	cat << EOF > $SUDOERS_FILE
-# The default sudoers file is located in the /etc/default directory
+# The default sudoers file is located in the $original_default directory
 root ALL=(ALL:ALL) ALL
 
 %wheel ALL=(ALL:ALL) ALL
@@ -483,6 +485,8 @@ EOF
 	rm -rf "$installation_temp"
 elif [ "$1" = 'user' ]
 then
+	. "$installation_vars_location"
+
 	if [ "$TYPE" = 'hyprland' ]
 	then
 		clone_dotfiles 'dotfiles-hyprland'
@@ -494,8 +498,6 @@ then
 	fi
 
 	rustup default stable >> "$installation_log" 2>&1
-
-	. /install-vars
 
 	if [ "$INSTALL_AUR_HELPER" -eq 0 ]
 	then
