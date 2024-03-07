@@ -1,7 +1,14 @@
 #!/bin/sh
 
+whiptail_height=20
+whiptail_width=60
+
+pre_installation_log='/root/installation_log.txt'
+
 installation_temp='/installation'
 installation_log="$installation_temp/installation_log.txt"
+installation_script_location="$installation_temp/install-script"
+installation_vars_location="$installation_temp/install-vars"
 installation_final='/root/installation'
 
 enable_service() {
@@ -96,29 +103,29 @@ sudo_make_repository() {
 }
 
 whiptail_msgbox() {
-	whiptail --title "$1" --msgbox "$2" 0 0
+	whiptail --title "$1" --msgbox "$2" "$whiptail_height" "$whiptail_width"
 }
 
 whiptail_yesno() {
-	whiptail --title "$1" --yesno "$2" 0 0
+	whiptail --title "$1" --yesno "$2" "$whiptail_height" "$whiptail_width"
 }
 
 whiptail_menu() {
-	whiptail --title "$1" --nocancel --notags --menu "$2" 0 0 0 $3 \
+	whiptail --title "$1" --nocancel --notags --menu "$2" "$whiptail_height" "$whiptail_width" 0 $3 \
 		3>&1 1>&2 2>&3
 }
 
 whiptail_checklist() {
-	whiptail --title "$1" --nocancel --notags --checklist "$2" 0 0 0 $3 \
+	whiptail --title "$1" --nocancel --notags --checklist "$2" "$whiptail_height" "$whiptail_width" 0 $3 \
 		3>&1 1>&2 2>&3 | tr -d '"'
 }
 
 whiptail_inputbox() {
-	whiptail --title "$1" --nocancel --inputbox "$2" 0 0 3>&1 1>&2 2>&3
+	whiptail --title "$1" --nocancel --inputbox "$2" "$whiptail_height" "$whiptail_width" 3>&1 1>&2 2>&3
 }
 
 whiptail_passwordbox() {
-	whiptail --title "$1" --nocancel --passwordbox "$2" 0 0 3>&1 1>&2 2>&3
+	whiptail --title "$1" --nocancel --passwordbox "$2" "$whiptail_height" "$whiptail_width" 3>&1 1>&2 2>&3
 }
 
 if [ ! $1 ] || [ "$1" = '--help' ]
@@ -261,6 +268,8 @@ elif [ "$1" = '--install' ]
 then
 	. ./install-vars.sh
 
+	touch "$pre_installation_log"
+
 	loadkeys "$KEYMAP"
 
 	PASSWORD=$(whiptail_passwordbox 'User' 'Write the desired user password')
@@ -303,7 +312,7 @@ then
 
 			swapon "/dev/$SWAP_PARTITION"
 		fi
-	} >> /dev/null 2>&1
+	} >> "$pre_installation_log" 2>&1
 
 	PACSTRAP_PACKAGES="base $KERNEL linux-firmware"
 
@@ -320,28 +329,24 @@ then
 		mkdir -p /mnt/etc/X11/xorg.conf.d
 		cp /etc/X11/xorg.conf.d/00-keyboard.conf /mnt/etc/X11/xorg.conf.d/00-keyboard.conf
 
-		cp $0 /mnt/install-script
+		mkdir -p "/mnt$installation_temp"
 
-		cp ./install-vars.sh /mnt/install-vars
+		cp $0 "/mnt$installation_script_location"
+		cp ./install-vars.sh "/mnt$installation_vars_location"
+		cp "$pre_installation_log" "/mnt$installation_log"
 
-		chmod 777 /mnt/install-script /mnt/install-vars
+		chmod 777 "/mnt$installation_temp" "/mnt$installation_script_location" "/mnt$installation_vars_location"
+		chmod 666 "/mnt$installation_log"
 
-		printf "PASSWORD='$PASSWORD'\n" >> /mnt/install-vars
-	} >> /dev/null 2>&1
+		printf "PASSWORD='$PASSWORD'\n" >> "/mnt$installation_vars_location"
+	} >> "$pre_installation_log" 2>&1
 
-	arch-chroot /mnt /install-script root
-
-	rm -rf /mnt/install-script /mnt/install-vars
+	arch-chroot /mnt "$installation_script_location" root
 
 	printf 'The installation is complete\n'
 elif [ "$1" = 'root' ]
 then
 	. /install-vars
-
-	mkdir -p "$installation_temp"
-	touch "$installation_log"
-	chmod 777 "$installation_temp"
-	chmod 666 "$installation_log"
 
 	{
 		ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
@@ -474,7 +479,8 @@ root ALL=(ALL:ALL) ALL
 @includedir /etc/sudoers.d
 EOF
 
-	cp -r "$installation_temp"/. "$installation_final"
+	cp -r "$installation_temp/." "$installation_final"
+	rm -rf "$installation_temp"
 elif [ "$1" = 'user' ]
 then
 	if [ "$TYPE" = 'hyprland' ]
