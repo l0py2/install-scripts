@@ -56,11 +56,11 @@ make_aur_packages() {
 
 			cd "$HOME/repositories"
 
-			for PACKAGE in $1
+			for package in $1
 			do
-				git clone --depth=1 "https://aur.archlinux.org/$PACKAGE.git" "$PACKAGE"
+				git clone --depth=1 "https://aur.archlinux.org/$package.git" "$package"
 
-				cd "$PACKAGE"
+				cd "$package"
 
 				makepkg -si --noconfirm
 
@@ -137,57 +137,57 @@ then
 	printf 'Use --install to install based on the current configuration\n'
 elif [ "$1" = '--init' ]
 then
-	EFI_SYSTEM=0
+	efi_system=0
 
 	ls /sys/firmware/efi > /dev/null 2>&1
 
 	if [ $? -eq 0 ]
 	then
-		EFI_SYSTEM=1
+		efi_system=1
 	fi
 
 	whiptail_msgbox 'Arch Linux install script' \
 		'Welcome to l0py2 automated Arch install script'
 
-	KEYMAPS=$(localectl list-keymaps | awk '{print $1" "$1}' | tr '\n' ' ')
+	keymap_list=$(localectl list-keymaps | awk '{print $1" "$1}' | tr '\n' ' ')
 
-	KEYMAP=$(whiptail_menu 'Keymap' 'Select the desired keymap' "$KEYMAPS")
+	KEYMAP=$(whiptail_menu 'Keymap' 'Select the desired keymap' "$keymap_list")
 
 	loadkeys "$KEYMAP"
 
-	DISKS=$(lsblk -ln | grep 'disk' | awk '{print $1" "$1}' | tr '\n' ' ')
+	disk_list=$(lsblk -ln | grep 'disk' | awk '{print $1" "$1}' | tr '\n' ' ')
 
 	whiptail_yesno 'Disk partitioning' \
 		'Have you already partitioned the desired partitions for the installation'
 
 	if [ $? -eq 1 ]
 	then
-		PARTITION_UTILITY=$(whiptail_menu 'Disk partitioning' \
+		partition_utility=$(whiptail_menu 'Disk partitioning' \
 			'Select fdisk or cfdisk for partitioning' \
 			'fdisk fdisk cfdisk cfdisk')
 
-		CONTINUE_PARTITIONING=0
+		continue_partitioning=0
 
-		while [ $CONTINUE_PARTITIONING -eq 0 ]
+		while [ $continue_partitioning -eq 0 ]
 		do
-			PARTITION_OPTION=$(whiptail_menu 'Disk partitioning' \
-				'Select the desired disk to partition' "$DISKS")
+			partition_option=$(whiptail_menu 'Disk partitioning' \
+				'Select the desired disk to partition' "$disk_list")
 
-			$PARTITION_UTILITY "/dev/$PARTITION_OPTION"
+			$partition_utility "/dev/$partition_option"
 
 			whiptail_yesno 'Disk partitioning' \
 				'Continue partitioning the disks'
 
-			CONTINUE_PARTITIONING=$?
+			continue_partitioning=$?
 		done
 	fi
 
-	PARTITIONS=$(lsblk -ln | grep 'part' | awk '{print $1" "$1}' | tr '\n' ' ')
+	partition_list=$(lsblk -ln | grep 'part' | awk '{print $1" "$1}' | tr '\n' ' ')
 
-	if [ $EFI_SYSTEM -eq 1 ]
+	if [ $efi_system -eq 1 ]
 	then
 		EFI_PARTITION=$(whiptail_menu 'Disk partitioning' \
-			'Select the desired EFI partition' "$PARTITIONS")
+			'Select the desired EFI partition' "$partition_list")
 
 		whiptail_yesno 'Disk partitioning' 'Do not format EFI partition'
 
@@ -195,33 +195,33 @@ then
 	else
 		BIOS_DISK=$(whiptail_menu 'Disk partitioning' \
 			'Select the disk that contains the desired BIOS boot partition' \
-			"$DISKS")
+			"$disk_list")
 	fi
 
 	SWAP_PARTITION=$(whiptail_menu 'Disk partitioning' \
-		'Select the desired swap partition or none for none' "none none $PARTITIONS")
+		'Select the desired swap partition or none for none' "none none $partition_list")
 
 	ROOT_PARTITION=$(whiptail_menu 'Disk partitioning' \
-		'Select the desired root partition' "$PARTITIONS")
+		'Select the desired root partition' "$partition_list")
 
-	LOCALES=$(cat /etc/locale.gen | grep '.UTF-8 UTF-8' | tr -d '#' | awk '{print $1" "$1}' | tr '\n' ' ')
+	locale_list=$(cat /etc/locale.gen | grep '.UTF-8 UTF-8' | tr -d '#' | awk '{print $1" "$1}' | tr '\n' ' ')
 
-	LOCALE=$(whiptail_menu 'Locale' 'Select the desired locale' "$LOCALES")
+	LOCALE=$(whiptail_menu 'Locale' 'Select the desired locale' "$locale_list")
 
-	ZONES=$(ls -1 /usr/share/zoneinfo | awk '{print $1" "$1}' | tr '\n' ' ')
+	zone_list=$(ls -1 /usr/share/zoneinfo | awk '{print $1" "$1}' | tr '\n' ' ')
 
-	ZONE=$(whiptail_menu 'Timezone' 'Select the desired timezone zone' \
-		"$ZONES")
+	zone=$(whiptail_menu 'Timezone' 'Select the desired timezone zone' \
+		"$zone_list")
 
-	if [ -d "/usr/share/zoneinfo/$ZONE" ]
+	if [ -d "/usr/share/zoneinfo/$zone" ]
 	then
-		SUB_ZONES=$(ls -1 "/usr/share/zoneinfo/$ZONE" | awk '{print $1" "$1}' | tr '\n' ' ')
+		sub_zone_list=$(ls -1 "/usr/share/zoneinfo/$zone" | awk '{print $1" "$1}' | tr '\n' ' ')
 
-		SUB_ZONE=$(whiptail_menu 'Timezone' 'Select the desired timezone sub zone' \
-			"$SUB_ZONES")
+		sub_zone=$(whiptail_menu 'Timezone' 'Select the desired timezone sub zone' \
+			"$sub_zone_list")
 	fi
 
-	TIMEZONE="$ZONE/$SUB_ZONE"
+	TIMEZONE="$zone/$sub_zone"
 
 	HOSTNAME=$(whiptail_inputbox 'Hostname' 'Write the desired hostname')
 
@@ -249,23 +249,23 @@ then
 	whiptail_yesno 'Additional packages' 'Install Arch User Repository (AUR) helper'
 	INSTALL_AUR_HELPER=$?
 
-	VARS_FILE='install-vars.sh'
-	printf '#!/bin/sh\n' > $VARS_FILE
-	printf "KEYMAP='$KEYMAP'\n" >> $VARS_FILE
-	printf "BIOS_DISK='$BIOS_DISK'\n" >> $VARS_FILE
-	printf "EFI_PARTITION='$EFI_PARTITION'\n" >> $VARS_FILE
-	printf "FORMAT_EFI_PARTITION='$FORMAT_EFI_PARTITION'\n" >> $VARS_FILE
-	printf "SWAP_PARTITION='$SWAP_PARTITION'\n" >> $VARS_FILE
-	printf "ROOT_PARTITION='$ROOT_PARTITION'\n" >> $VARS_FILE
-	printf "LOCALE='$LOCALE'\n" >> $VARS_FILE
-	printf "TIMEZONE='$TIMEZONE'\n" >> $VARS_FILE
-	printf "HOSTNAME='$HOSTNAME'\n" >> $VARS_FILE
-	printf "USERNAME='$USERNAME'\n" >> $VARS_FILE
-	printf "KERNEL='$KERNEL'\n" >> $VARS_FILE
-	printf "MICROCODE='$MICROCODE'\n" >> $VARS_FILE
-	printf "TYPE='$TYPE'\n" >> $VARS_FILE
-	printf "ADDITIONAL_PACKAGES='$ADDITIONAL_PACKAGES'\n" >> $VARS_FILE
-	printf "INSTALL_AUR_HELPER='$INSTALL_AUR_HELPER'\n" >> $VARS_FILE
+	vars_file='install-vars.sh'
+	printf '#!/bin/sh\n' > $vars_file
+	printf "KEYMAP='$KEYMAP'\n" >> $vars_file
+	printf "BIOS_DISK='$BIOS_DISK'\n" >> $vars_file
+	printf "EFI_PARTITION='$EFI_PARTITION'\n" >> $vars_file
+	printf "FORMAT_EFI_PARTITION='$FORMAT_EFI_PARTITION'\n" >> $vars_file
+	printf "SWAP_PARTITION='$SWAP_PARTITION'\n" >> $vars_file
+	printf "ROOT_PARTITION='$ROOT_PARTITION'\n" >> $vars_file
+	printf "LOCALE='$LOCALE'\n" >> $vars_file
+	printf "TIMEZONE='$TIMEZONE'\n" >> $vars_file
+	printf "HOSTNAME='$HOSTNAME'\n" >> $vars_file
+	printf "USERNAME='$USERNAME'\n" >> $vars_file
+	printf "KERNEL='$KERNEL'\n" >> $vars_file
+	printf "MICROCODE='$MICROCODE'\n" >> $vars_file
+	printf "TYPE='$TYPE'\n" >> $vars_file
+	printf "ADDITIONAL_PACKAGES='$ADDITIONAL_PACKAGES'\n" >> $vars_file
+	printf "INSTALL_AUR_HELPER='$INSTALL_AUR_HELPER'\n" >> $vars_file
 elif [ "$1" = '--install' ]
 then
 	. ./install-vars.sh
@@ -276,15 +276,15 @@ then
 
 	PASSWORD=$(whiptail_passwordbox 'User' 'Write the desired user password')
 
-	VERIFICATION_PASSWORD=$(whiptail_passwordbox 'User' 'Write the desired user password again to confirm')
+	verification_password=$(whiptail_passwordbox 'User' 'Write the desired user password again to confirm')
 
-	while [ ! "$PASSWORD" = "$VERIFICATION_PASSWORD" ]
+	while [ ! "$PASSWORD" = "$verification_password" ]
 	do
 		whiptail_msgbox 'User' 'Passwords do not match'
 
 		PASSWORD=$(whiptail_passwordbox 'User' 'Write the desired user password')
 
-		VERIFICATION_PASSWORD=$(whiptail_passwordbox 'User' 'Write the desired user password again to confirm')
+		verification_password=$(whiptail_passwordbox 'User' 'Write the desired user password again to confirm')
 	done
 
 	whiptail_msgbox 'User' 'The password will be used for root user too'
@@ -316,12 +316,12 @@ then
 		fi
 	} >> "$pre_installation_log" 2>&1
 
-	PACSTRAP_PACKAGES="base $KERNEL linux-firmware"
+	pacstrap_packages="base $KERNEL linux-firmware"
 
-	printf "Installing base system: $PACSTRAP_PACKAGES\n"
+	printf "Installing base system: $pacstrap_packages\n"
 
 	{
-		pacstrap -K /mnt $PACSTRAP_PACKAGES
+		pacstrap -K /mnt $pacstrap_packages
 
 		genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -393,16 +393,28 @@ EOF
 
 	enable_service 'NetworkManager'
 
+	install_packages 'git'
+
+	{
+		cp -r /etc/skel "$original_default"
+		cd /etc/skel
+		git clone --depth=1 https://github.com/l0py2/dotfiles-base
+		rm -rf dotfiles-base/.git
+		cp -r dotfiles-base/. ./
+		rm -r dotfiles-base
+		cp -r ./ /root
+	} >> "$installation_log" 2>&1
+
 	install_packages 'sudo'
 
-	SUDOERS_FILE='/etc/sudoers'
+	sudoers_file='/etc/sudoers'
 
 	{
 		useradd -m -G wheel "$USERNAME"
 
-		cp $SUDOERS_FILE "$original_default"
+		cp $sudoers_file "$original_default"
 
-		printf '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> $SUDOERS_FILE
+		printf '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL # temp\n' >> $sudoers_file
 
 		printf "root:$PASSWORD\n" | chpasswd
 		printf "$USERNAME:$PASSWORD\n" | chpasswd
@@ -428,45 +440,44 @@ EOF
 
 	sudo -u "$USERNAME" "$installation_script_location" dotfiles
 
-	FIRMWARE_PACKAGES='alsa-firmware sof-firmware'
-	DEPENDENCY_PACKAGES='rustup'
-	FONT_PACKAGES='noto-fonts noto-fonts-cjk'
-	AUDIO_PACKAGES=''
-	SYSTEM_PACKAGES='base-devel git openssh'
-	USER_PACKAGES=''
-	UTIL_PACKAGES='man-db man-pages texinfo'
+	firmware_packages='alsa-firmware sof-firmware'
+	dependency_packages='rustup'
+	font_packages='noto-fonts noto-fonts-cjk'
+	audio_packages=''
+	system_packages='base-devel openssh'
+	user_packages='neovim'
+	util_packages='man-db man-pages texinfo'
 
 	if [ "$TYPE" = 'hyprland' ]
 	then
-		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES qt5-wayland qt6-wayland gtk4"
-		FONT_PACKAGES="$FONT_PACKAGES noto-fonts-emoji ttf-nerd-fonts-symbols"
-		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber pavucontrol"
-		SYSTEM_PACKAGES="$SYSTEM_PACKAGES polkit polkit-gnome xdg-desktop-portal-wlr xdg-user-dirs"
-		USER_PACKAGES="$USER_PACKAGES starship dunst kitty swaybg thunar udisks2 waybar wofi"
-		UTIL_PACKAGES="$UTIL_PACKAGES neovim"
+		dependency_packages="$dependency_packages qt5-wayland qt6-wayland gtk4"
+		font_packages="$font_packages noto-fonts-emoji ttf-nerd-fonts-symbols"
+		audio_packages="$audio_packages pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber pavucontrol"
+		system_packages="$system_packages polkit polkit-gnome xdg-desktop-portal-wlr xdg-user-dirs"
+		user_packages="$user_packages starship dunst kitty swaybg thunar udisks2 waybar wofi"
 	elif [ "$TYPE" = 'dwm' ]
 	then
-		DEPENDENCY_PACKAGES="$DEPENDENCY_PACKAGES libx11 libxft libxinerama"
-		FONT_PACKAGES="$FONT_PACKAGES noto-fonts-emoji ttf-nerd-fonts-symbols"
-		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber pavucontrol"
-		SYSTEM_PACKAGES="$SYSTEM_PACKAGES polkit polkit-gnome xdg-desktop-portal-gtk xdg-user-dirs xorg-server xorg-xinit xss-lock"
-		USER_PACKAGES="$USER_PACKAGES starship dunst feh picom thunar thunar-archive-plugin udisks2 xarchiver"
-		UTIL_PACKAGES="$UTIL_PACKAGES acpi neovim rclone"
+		dependency_packages="$dependency_packages libx11 libxft libxinerama"
+		font_packages="$font_packages noto-fonts-emoji ttf-nerd-fonts-symbols"
+		audio_packages="$audio_packages pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber pavucontrol"
+		system_packages="$system_packages polkit polkit-gnome xdg-desktop-portal-gtk xdg-user-dirs xorg-server xorg-xinit xss-lock"
+		user_packages="$user_packages dunst feh picom thunar thunar-archive-plugin udisks2 xarchiver"
+		util_packages="$util_packages acpi rclone"
 	elif [ "$TYPE" = 'xfce' ]
 	then
-		FONT_PACKAGES="$FONT_PACKAGES noto-fonts-emoji"
-		AUDIO_PACKAGES="$AUDIO_PACKAGES pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber"
-		SYSTEM_PACKAGES="$SYSTEM_PACKAGES lightdm lightdm-gtk-greeter xfce4 xfce4-goodies"
-		USER_PACKAGES="$USER_PACKAGES pavucontrol xarchiver"
+		font_packages="$font_packages noto-fonts-emoji"
+		audio_packages="$audio_packages pipewire pipewire-alsa pipewire-audio pipewire-jack pipewire-pulse wireplumber"
+		system_packages="$system_packages lightdm lightdm-gtk-greeter xfce4 xfce4-goodies"
+		user_packages="$user_packages pavucontrol xarchiver"
 	fi
 
-	install_packages "$FIRMWARE_PACKAGES"
-	install_packages "$DEPENDENCY_PACKAGES"
-	install_packages "$FONT_PACKAGES"
-	install_packages "$AUDIO_PACKAGES"
-	install_packages "$SYSTEM_PACKAGES"
-	install_packages "$USER_PACKAGES"
-	install_packages "$UTIL_PACKAGES"
+	install_packages "$firmware_packages"
+	install_packages "$dependency_packages"
+	install_packages "$font_packages"
+	install_packages "$audio_packages"
+	install_packages "$system_packages"
+	install_packages "$user_packages"
+	install_packages "$util_packages"
 	install_packages "$ADDITIONAL_PACKAGES"
 
 	if [ "$TYPE" = 'xfce' ]
@@ -476,7 +487,7 @@ EOF
 
 	sudo -u "$USERNAME" "$installation_script_location" user
 
-	cat << EOF > $SUDOERS_FILE
+	cat << EOF > $sudoers_file
 # The default sudoers file is located in the $original_default directory
 root ALL=(ALL:ALL) ALL
 
@@ -497,8 +508,6 @@ then
 	elif [ "$TYPE" = 'dwm' ]
 	then
 		clone_dotfiles 'dotfiles-dwm'
-	else
-		clone_dotfiles 'dotfiles-base'
 	fi
 elif [ "$1" = 'user' ]
 then
@@ -530,14 +539,14 @@ then
 		sudo_make_repository 'slock' 'https://github.com/l0py2/slock'
 	fi
 
-	AUR_PACKAGES=''
+	aur_packages=''
 
 	if [ "$TYPE" = 'hyprland' ]
 	then
-		AUR_PACKAGES="$AUR_PACKAGES hyprland-git"
+		aur_packages="$aur_packages hyprland-git"
 	fi
 
-	make_aur_packages "$AUR_PACKAGES"
+	make_aur_packages "$aur_packages"
 
 	rm -rf "$HOME/repositories"
 else
