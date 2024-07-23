@@ -4,7 +4,7 @@
 
 # Example: pt-latin1
 KEYMAP=''
-# Example: en_US.UTF-8 UTF-8
+# Example: en_US.UTF-8
 LOCALE=''
 # Example: Europe/Lisbon
 TIMEZONE=''
@@ -85,7 +85,7 @@ then
 	arch-chroot /mnt /install-script --root
 elif [ "$1" = '--root' ]
 then
-	pacman -S $PACKAGES
+	pacman -S --noconfirm $PACKAGES
 
 	ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 
@@ -129,7 +129,7 @@ EOF
 
 	if [ $efi_system -eq 1 ]
 	then
-		pacman -S efibootmgr
+		pacman -S --noconfirm efibootmgr
 
 		grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 	else
