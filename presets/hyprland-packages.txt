@@ -1,0 +1,14 @@
+breeze-gtk
+dunst
+foot
+hyprland
+hyprlock
+hyprpicker
+mpc
+mpd
+ncmpcpp
+pavucontrol
+polkit-gnome
+waybar
+wofi
+xdg-user-dirs
